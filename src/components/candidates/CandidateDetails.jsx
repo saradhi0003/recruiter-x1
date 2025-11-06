@@ -48,7 +48,8 @@ import {
 import CandidateAISummary from "./CandidateAISummary";
 import StatusPath from "@/components/common/StatusPath";
 import RelatedQuickLinks from "@/components/common/RelatedQuickLinks";
-import { usePermissions, PermissionGate } from "@/components/common/PermissionsContext";
+import { usePermissions } from "@/components/common/PermissionsContext"; // Modified line
+import PermissionGate from "@/components/common/PermissionGate"; // New line
 import { addNotification } from "@/components/notifications/NotificationToast";
 
 // Define stages with "Our Bench" positioned before "Active" as requested
