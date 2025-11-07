@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,12 @@ import {
   MailPlus,
   Brain,
   BookOpen,
-  List
+  List,
+  Code, // Added Code icon for API reference
+  Briefcase, // Added Briefcase icon for Jobs API
+  Send, // Added Send icon for Applications API
+  CheckCircle, // Existing icon
+  TrendingUp // Existing icon
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import Breadcrumbs from "@/components/common/Breadcrumbs";
@@ -565,6 +571,7 @@ export default function BRD() {
             <li className="text-purple-700 font-semibold">NEW: AI Agent System</li>
             <li className="text-purple-700 font-semibold">NEW: Email Blast System</li>
             <li className="text-purple-700 font-semibold">NEW: Advanced AI Matching</li>
+            <li className="text-purple-700 font-semibold">NEW: API Reference & Integration</li>
           </ol>
         </div>
       )
@@ -872,6 +879,499 @@ export default function BRD() {
               <li>Right-side global preview for Candidate, Job, Company, Application, Task, Playbook</li>
               <li>Explicit "Edit" actions bypass preview and navigate to full edit page</li>
               <li>Inline status update for Candidate within preview</li>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    },
+    {
+      id: "api-reference",
+      icon: Code,
+      title: "API Reference & Integration",
+      content: (
+        <div className="space-y-6">
+          <Card className="bg-slate-50">
+            <CardHeader>
+              <CardTitle className="text-base">API Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-slate-700 space-y-3">
+              <p>
+                The TalentStack Recruiter X platform provides a comprehensive REST API built on the Base44 platform,
+                allowing programmatic access to all core entities and operations.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3 bg-white rounded border">
+                  <p className="font-semibold text-slate-900 mb-1">Base URL</p>
+                  <code className="text-xs bg-slate-100 px-2 py-1 rounded">https://api.base44.com</code>
+                </div>
+                <div className="p-3 bg-white rounded border">
+                  <p className="font-semibold text-slate-900 mb-1">Authentication</p>
+                  <code className="text-xs bg-slate-100 px-2 py-1 rounded">Bearer Token (JWT)</code>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">API Keys & Authentication</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">Available API Keys</h4>
+                <div className="bg-slate-50 rounded p-4 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-green-100 text-green-800">SET</Badge>
+                    <div>
+                      <code className="text-xs bg-white px-2 py-1 rounded border">XAI_API_KEY</code>
+                      <p className="text-xs text-slate-600 mt-1">xAI (Grok) API key for advanced AI reasoning</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">Authentication Flow</h4>
+                <ol className="list-decimal list-inside space-y-2 ml-2">
+                  <li>User authenticates via Base44 platform login</li>
+                  <li>JWT token generated and stored in session</li>
+                  <li>Token included in all API requests via Authorization header</li>
+                  <li>Token auto-refreshes on activity; expires after 3 hours of inactivity</li>
+                </ol>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded p-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Request Headers</h4>
+                <pre className="text-xs bg-white rounded p-3 overflow-x-auto">
+{`Authorization: Bearer <jwt_token>
+Content-Type: application/json
+Accept: application/json`}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Core API Endpoints</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Candidates API */}
+              <div className="border rounded-lg p-4 bg-white">
+                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  Candidates API
+                </h4>
+                
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-green-100 text-green-800">GET</Badge>
+                      <code className="text-xs">/entities/Candidate</code>
+                    </div>
+                    <p className="text-slate-600 text-xs mb-2">List all candidates (respects RLS permissions)</p>
+                    <div className="bg-slate-50 rounded p-2">
+                      <p className="text-xs text-slate-500 mb-1">Query Parameters:</p>
+                      <ul className="text-xs space-y-1 ml-3">
+                        <li>• <code>sort</code>: Sort field (e.g., "-created_date" for descending)</li>
+                        <li>• <code>limit</code>: Number of records (default: 50)</li>
+                        <li>• <code>filter</code>: JSON filter object</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-blue-100 text-blue-800">POST</Badge>
+                      <code className="text-xs">/entities/Candidate</code>
+                    </div>
+                    <p className="text-slate-600 text-xs mb-2">Create new candidate</p>
+                    <div className="bg-slate-50 rounded p-2">
+                      <p className="text-xs text-slate-500 mb-1">Required fields:</p>
+                      <code className="text-xs">first_name, last_name, email</code>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-yellow-100 text-yellow-800">PUT</Badge>
+                      <code className="text-xs">/entities/Candidate/:id</code>
+                    </div>
+                    <p className="text-slate-600 text-xs">Update candidate by ID</p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-red-100 text-red-800">DELETE</Badge>
+                      <code className="text-xs">/entities/Candidate/:id</code>
+                    </div>
+                    <p className="text-slate-600 text-xs">Delete candidate by ID</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Jobs API */}
+              <div className="border rounded-lg p-4 bg-white">
+                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-purple-600" />
+                  Jobs API
+                </h4>
+                
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-green-100 text-green-800">GET</Badge>
+                      <code className="text-xs">/entities/Job</code>
+                    </div>
+                    <p className="text-slate-600 text-xs mb-2">List all jobs</p>
+                    <div className="bg-slate-50 rounded p-2">
+                      <p className="text-xs text-slate-500 mb-1">Common filters:</p>
+                      <ul className="text-xs space-y-1 ml-3">
+                        <li>• <code>{"{\"status\": \"open\"}"}</code> - Active jobs only</li>
+                        <li>• <code>{"{\"priority\": \"high\"}"}</code> - High priority jobs</li>
+                        <li>• <code>{"{\"company_id\": \"<id>\"}"}</code> - Jobs by company</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-blue-100 text-blue-800">POST</Badge>
+                      <code className="text-xs">/entities/Job</code>
+                    </div>
+                    <p className="text-slate-600 text-xs mb-2">Create new job</p>
+                    <div className="bg-slate-50 rounded p-2">
+                      <p className="text-xs text-slate-500 mb-1">Required fields:</p>
+                      <code className="text-xs">title, company_id</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Applications API */}
+              <div className="border rounded-lg p-4 bg-white">
+                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Send className="w-4 h-4 text-green-600" />
+                  Applications API
+                </h4>
+                
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-green-100 text-green-800">GET</Badge>
+                      <code className="text-xs">/entities/Application</code>
+                    </div>
+                    <p className="text-slate-600 text-xs">List all applications with candidate-job relationships</p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-blue-100 text-blue-800">POST</Badge>
+                      <code className="text-xs">/entities/Application</code>
+                    </div>
+                    <p className="text-slate-600 text-xs mb-2">Create application</p>
+                    <div className="bg-slate-50 rounded p-2">
+                      <p className="text-xs text-slate-500 mb-1">Required fields:</p>
+                      <code className="text-xs">candidate_id, job_id</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">JSON Structure Reference</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Candidate JSON */}
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  Candidate JSON Structure
+                </h4>
+                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
+{`{
+  "id": "uuid",                          // Auto-generated
+  "created_date": "2024-01-15T10:30:00Z", // Auto-generated
+  "updated_date": "2024-01-15T10:30:00Z", // Auto-generated
+  "created_by": "user@example.com",      // Auto-generated
+  
+  "first_name": "John",                  // Required
+  "last_name": "Doe",                    // Required
+  "email": "john.doe@email.com",         // Required
+  "phone": "+1-555-0123",
+  "location": "New York, NY",
+  "linkedin_url": "https://linkedin.com/in/johndoe",
+  "resume_url": "https://storage.../resume.pdf",
+  
+  "skills": ["JavaScript", "React", "Node.js", "AWS"],
+  "experience_years": 5,
+  "current_title": "Senior Software Engineer",
+  "current_company": "Tech Corp",
+  "salary_expectation": 120000,
+  "availability": "2_weeks",
+  "status": "active",
+  "work_authorization": "citizen",
+  
+  "notes": "Strong full-stack developer...",
+  "source": "LinkedIn",
+  "tags": ["javascript", "senior", "full-stack"],
+  
+  "bench_match_score": 85,
+  "bench_score_details": {
+    "technical_skills": 90,
+    "experience_level": 85,
+    "location_fit": 80
+  },
+  
+  "screening_score": 78,
+  "screening_date": "2024-01-14T15:00:00Z",
+  "screening_details": {
+    "matching_qualifications": ["React", "Node.js"],
+    "missing_qualifications": ["Python"],
+    "overall_fit": "Strong match"
+  }
+}`}
+                </pre>
+              </div>
+
+              {/* Job JSON */}
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-purple-600" />
+                  Job JSON Structure
+                </h4>
+                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
+{`{
+  "id": "uuid",                          // Auto-generated
+  "created_date": "2024-01-15T10:30:00Z", // Auto-generated
+  "updated_date": "2024-01-15T10:30:00Z", // Auto-generated
+  "created_by": "user@example.com",      // Auto-generated
+  
+  "title": "Senior Full Stack Developer", // Required
+  "company_id": "company-uuid",          // Required (lookup)
+  
+  "description": "We are seeking a Senior Full Stack Developer...",
+  "requirements": "5+ years experience with React and Node.js...",
+  
+  "location": "New York, NY",
+  "remote_type": "hybrid",
+  "employment_type": "full_time",
+  "rate": "$120,000 - $150,000",
+  
+  "priority": "high",
+  "status": "open",
+  
+  "required_skills": ["React", "Node.js", "TypeScript", "AWS"],
+  "preferred_skills": ["GraphQL", "Docker", "Kubernetes"],
+  
+  "experience_required": 5,
+  "positions_available": 2,
+  "hiring_manager": "Jane Smith",
+  "due_date": "2024-03-01",
+  
+  "requester_email": "hiring@company.com",
+  "requester_name": "Jane Smith",
+  "visa_restrictions": "No H1B sponsorship",
+  "location_preference": "Must be in EST timezone",
+  "salary_text": "$120K-$150K base + equity",
+  "contract_type": "w2"
+}`}
+                </pre>
+              </div>
+
+              {/* Application JSON */}
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                  <Send className="w-4 h-4 text-green-600" />
+                  Application JSON Structure
+                </h4>
+                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
+{`{
+  "id": "uuid",                          // Auto-generated
+  "created_date": "2024-01-15T10:30:00Z", // Auto-generated
+  "updated_date": "2024-01-15T10:30:00Z", // Auto-generated
+  "created_by": "user@example.com",      // Auto-generated
+  
+  "candidate_id": "candidate-uuid",      // Required (lookup)
+  "job_id": "job-uuid",                  // Required (lookup)
+  
+  "status": "interviewing",
+  "stage_updated_date": "2024-01-15T10:30:00Z",
+  
+  "notes": "Strong technical interview...",
+  "interview_dates": [
+    {
+      "date": "2024-01-10T14:00:00Z",
+      "type": "phone_screen",
+      "interviewer": "John Smith",
+      "notes": "Good communication skills",
+      "feedback": "Proceed to technical"
+    },
+    {
+      "date": "2024-01-15T10:00:00Z",
+      "type": "technical",
+      "interviewer": "Jane Doe",
+      "notes": "Strong coding skills",
+      "feedback": "Recommend hire"
+    }
+  ],
+  
+  "submitted_by": "recruiter@company.com",
+  "client_feedback": "Excellent candidate, proceeding to final round",
+  "rejection_reason": null,
+  
+  "match_score": 87,
+  "score_details": {
+    "technical_skills": 92,
+    "experience_match": 85,
+    "culture_fit": 90,
+    "location_compatibility": 80,
+    "strengths": ["Strong React skills", "AWS certified"],
+    "concerns": ["Limited GraphQL experience"],
+    "overall_recommendation": "Strong hire"
+  }
+}`}
+                </pre>
+              </div>
+
+              {/* Submission JSON */}
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-orange-600" />
+                  Submission JSON Structure
+                </h4>
+                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
+{`{
+  "id": "uuid",                          // Auto-generated
+  "created_date": "2024-01-15T10:30:00Z", // Auto-generated
+  "updated_date": "2024-01-15T10:30:00Z", // Auto-generated
+  "created_by": "user@example.com",      // Auto-generated
+  
+  "candidate_id": "candidate-uuid",      // Required (lookup)
+  "job_id": "job-uuid",                  // Required (lookup)
+  "recruiter_id": "recruiter-uuid",      // Required
+  
+  "submitted_date": "2024-01-15T10:30:00Z",
+  "status": "under_review",
+  
+  "client_feedback": "Reviewing resume, will schedule interview",
+  "follow_up_date": "2024-01-20",
+  "follow_up_completed": false,
+  
+  "notes": "Submitted via LinkedIn outreach",
+  "interview_dates": [],
+  
+  "client": "Acme Corp",
+  "rate": "$85/hr",
+  "technologyText": "React, Node.js, AWS"
+}`}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Integration Examples</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">JavaScript/TypeScript (Frontend SDK)</h4>
+                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
+{`import { base44 } from '@/api/base44Client';
+
+// List candidates
+const candidates = await base44.entities.Candidate.list('-created_date', 50);
+
+// Filter candidates by status
+const activeCandidates = await base44.entities.Candidate.filter(
+  { status: 'active' }, 
+  '-updated_date', 
+  100
+);
+
+// Create candidate
+const newCandidate = await base44.entities.Candidate.create({
+  first_name: 'John',
+  last_name: 'Doe',
+  email: 'john.doe@email.com',
+  skills: ['JavaScript', 'React', 'Node.js'],
+  status: 'active'
+});
+
+// Update candidate
+await base44.entities.Candidate.update(candidateId, {
+  status: 'interviewing',
+  notes: 'Scheduled for technical interview'
+});
+
+// Get candidate by ID
+const candidate = await base44.entities.Candidate.get(candidateId);
+
+// Delete candidate
+await base44.entities.Candidate.delete(candidateId);`}
+                </pre>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">cURL Examples</h4>
+                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
+{`# List candidates
+curl -X GET "https://api.base44.com/entities/Candidate?limit=50&sort=-created_date" \\
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
+  -H "Content-Type: application/json"
+
+# Create candidate
+curl -X POST "https://api.base44.com/entities/Candidate" \\
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@email.com",
+    "skills": ["JavaScript", "React"],
+    "status": "active"
+  }'
+
+# Update candidate
+curl -X PUT "https://api.base44.com/entities/Candidate/{id}" \\
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "status": "interviewing",
+    "notes": "Scheduled for interview"
+  }'`}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-amber-50 border-amber-200">
+            <CardHeader>
+              <CardTitle className="text-base text-amber-900">Rate Limits & Best Practices</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-amber-800 space-y-2">
+              <div>
+                <strong>Rate Limits:</strong>
+                <ul className="list-disc list-inside ml-4 mt-1">
+                  <li>100 requests per minute per user</li>
+                  <li>1000 requests per hour per user</li>
+                  <li>Bulk operations limited to 100 records per request</li>
+                </ul>
+              </div>
+              <div>
+                <strong>Best Practices:</strong>
+                <ul className="list-disc list-inside ml-4 mt-1">
+                  <li>Use filtering and pagination to limit data transfer</li>
+                  <li>Cache frequently accessed data (roles, company lists)</li>
+                  <li>Use bulk operations for mass updates</li>
+                  <li>Implement exponential backoff for retry logic</li>
+                  <li>Always validate input data before sending requests</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
         </div>
