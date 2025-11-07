@@ -36,6 +36,8 @@ import AutomationRules from './pages/AutomationRules';
 import SkillMatrix from './pages/SkillMatrix';
 import DuplicateManager from './pages/DuplicateManager';
 import Landing from './pages/Landing';
+import EmailBlast from './pages/EmailBlast';
+import AIAgents from './pages/AIAgents';
 import Layout from './Layout.jsx';
 
 
@@ -78,6 +80,8 @@ export const PAGES = {
     "SkillMatrix": SkillMatrix,
     "DuplicateManager": DuplicateManager,
     "Landing": Landing,
+    "EmailBlast": EmailBlast,
+    "AIAgents": AIAgents,
 }
 
 export const pagesConfig = {

@@ -29,6 +29,8 @@ import {
   Zap, // Added Zap icon for Automation Rules
   AlertTriangle, // Added AlertTriangle icon for Duplicate Manager
   Loader2, // Added Loader2 for loading state
+  Brain, // Added Brain icon for AI Agents
+  MailPlus, // Added MailPlus icon for Email Blast
 } from "lucide-react";
 import {
   Sidebar,
@@ -970,6 +972,46 @@ export default function Layout({ children, currentPageName }) {
                           >
                             <Briefcase className="w-5 h-5" />
                             <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>Job Stack (Public)</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          asChild
+                          className={`transition-all duration-200 rounded-lg ${
+                            location.pathname === createPageUrl("AIAgents")
+                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
+                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
+                        >
+                          <Link
+                            to={createPageUrl("AIAgents")}
+                            title={sidebarCollapsed ? "AI Agents" : undefined}
+                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
+                          >
+                            <Brain className="w-5 h-5" />
+                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>AI Agents</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          asChild
+                          className={`transition-all duration-200 rounded-lg ${
+                            location.pathname === createPageUrl("EmailBlast")
+                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
+                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
+                        >
+                          <Link
+                            to={createPageUrl("EmailBlast")}
+                            title={sidebarCollapsed ? "Email Blast" : undefined}
+                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
+                          >
+                            <MailPlus className="w-5 h-5" />
+                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>Email Blast</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
