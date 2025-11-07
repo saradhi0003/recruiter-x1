@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Loader2, CheckCircle2, X, AlertTriangle } from "lucide-react";
-import { UploadFile, ExtractDataFromUploadedFile } from "@/integrations/Core";
-import { Company } from "@/entities/Company";
+import { Upload, Loader2, CheckCircle2, X, AlertTriangle, Sparkles, RefreshCw, Check } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { sendAppEmail } from "@/components/utils/email";
-import { User } from "@/entities/User"; // NEW
+import { User } from "@/entities/User";
 
 function normalizeKey(s = "") {
   return String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -68,6 +67,109 @@ function parseCSV(text) {
     return obj;
   });
   return data;
+}
+
+// AI-powered smart mapping
+async function aiSuggestMapping(srcKeys, tgtProps, sampleData) {
+  try {
+    const targetFields = Object.entries(tgtProps || {}).map(([key, prop]) => ({
+      field_name: key,
+      type: prop.type,
+      description: prop.description || "",
+      enum_values: prop.enum || [],
+      required: false
+    }));
+
+    const sourceColumns = srcKeys.map(key => ({
+      column_name: key,
+      sample_values: sampleData
+        .slice(0, 3)
+        .map(row => row[key])
+        .filter(v => v && String(v).trim())
+    }));
+
+    const prompt = `You are an intelligent data mapping assistant. Analyze the CSV column names and their sample data, then map them to the appropriate target database fields.
+
+**Target Database Fields:**
+${JSON.stringify(targetFields, null, 2)}
+
+**Source CSV Columns:**
+${JSON.stringify(sourceColumns, null, 2)}
+
+**Your Task:**
+For each source column, determine:
+1. The most appropriate target field to map to (or null if no good match)
+2. A confidence score (0-100) indicating how confident you are in this mapping
+3. The reasoning behind your decision
+
+**Mapping Rules:**
+- Look for semantic similarity, not just string matching
+- Consider sample data to understand column content
+- "First Name" or "fname" → first_name
+- "Email Address" or "email" → email  
+- "Phone" or "mobile" → phone
+- "Job Title" or "position" → current_title
+- "Company" → current_company
+- "Skills" (comma-separated) → skills (array)
+- "Years Experience" or "yoe" → experience_years
+- Consider data types (number fields shouldn't map to string columns)
+- If no clear match exists, suggest null
+
+Return a JSON array of mappings in this exact format:
+{
+  "mappings": [
+    {
+      "source_column": "column name",
+      "target_field": "field_name or null",
+      "confidence": 95,
+      "reasoning": "brief explanation"
+    }
+  ]
+}`;
+
+    const response = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          mappings: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                source_column: { type: "string" },
+                target_field: { type: "string" },
+                confidence: { type: "number" },
+                reasoning: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const mappingObj = {};
+    const confidenceObj = {};
+    const reasoningObj = {};
+
+    (response.mappings || []).forEach(m => {
+      if (m.target_field && m.target_field !== "null") {
+        mappingObj[m.source_column] = m.target_field;
+        confidenceObj[m.source_column] = m.confidence || 0;
+        reasoningObj[m.source_column] = m.reasoning || "";
+      }
+    });
+
+    return { mapping: mappingObj, confidence: confidenceObj, reasoning: reasoningObj };
+  } catch (error) {
+    console.error("AI mapping failed:", error);
+    // Fallback to basic normalization
+    return { 
+      mapping: suggestMapping(srcKeys, tgtProps), 
+      confidence: {}, 
+      reasoning: {} 
+    };
+  }
 }
 
 function suggestMapping(srcKeys, tgtProps) {
@@ -176,20 +278,23 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
   const [parsing, setParsing] = React.useState(false);
   const [preview, setPreview] = React.useState([]);
   const [mapping, setMapping] = React.useState({});
+  const [confidence, setConfidence] = React.useState({});
+  const [reasoning, setReasoning] = React.useState({});
   const [step, setStep] = React.useState("ready"); // ready | mapping | inserting | done
   const [error, setError] = React.useState("");
   const [hint, setHint] = React.useState("");
   const [inserted, setInserted] = React.useState(0);
   const [skipped, setSkipped] = React.useState(0);
+  const [aiMapping, setAiMapping] = React.useState(false);
 
-  const [tab, setTab] = React.useState("all"); // all | mapped | unmapped
+  const [tab, setTab] = React.useState("all"); // all | mapped | unmapped | high_confidence
   const [q, setQ] = React.useState("");
 
   const fileInputRef = React.useRef(null);
   const longRunRef = React.useRef(false);
-  const [myEmail, setMyEmail] = React.useState(""); // NEW: current user email
+  const [myEmail, setMyEmail] = React.useState(""); // current user email
 
-  // NEW: load current user email to use as recipient for emails
+  // load current user email to use as recipient for emails
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -215,18 +320,43 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
     setParsing(false);
     setPreview([]);
     setMapping({});
+    setConfidence({});
+    setReasoning({});
     setStep("ready");
     setError("");
     setHint("");
     setInserted(0);
     setSkipped(0);
+    setAiMapping(false);
     onClose?.();
   };
 
-  const setMapDefaults = (rows) => {
+  const setMapDefaults = async (rows) => {
     const sample = rows[0] || {};
     const srcKeys = Object.keys(sample);
-    setMapping(suggestMapping(srcKeys, schemaProps));
+    
+    // Use AI mapping for smart suggestions
+    setAiMapping(true);
+    setHint("🤖 AI is analyzing your columns and suggesting intelligent mappings...");
+    
+    try {
+      const { mapping: aiMap, confidence: aiConf, reasoning: aiReas } = await aiSuggestMapping(
+        srcKeys, 
+        schemaProps, 
+        rows.slice(0, 5)
+      );
+      
+      setMapping(aiMap);
+      setConfidence(aiConf);
+      setReasoning(aiReas);
+      setHint("✨ AI mapping complete! Review and adjust mappings below.");
+    } catch (err) {
+      console.error("AI mapping error:", err);
+      setMapping(suggestMapping(srcKeys, schemaProps));
+      setHint("⚠️ AI mapping failed, using basic matching. You can manually adjust mappings.");
+    } finally {
+      setAiMapping(false);
+    }
   };
 
   const localCSVImport = async (file) => {
@@ -240,7 +370,7 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
         return;
       }
       setPreview(rows.slice(0, 500));
-      setMapDefaults(rows);
+      await setMapDefaults(rows);
       setStep("mapping");
     } catch (e) {
       setError(e?.message || "Failed to parse file locally.");
@@ -265,12 +395,12 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
 
     setUploading(true);
     try {
-      const { file_url } = await UploadFile({ file: f });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
       setUploading(false);
       setParsing(true);
 
       const res = await withTimeout(
-        ExtractDataFromUploadedFile({ file_url, json_schema: schema }),
+        base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: schema }),
         25000
       );
 
@@ -282,7 +412,7 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
 
       const rows = Array.isArray(res.output) ? res.output : [res.output];
       setPreview(rows.slice(0, 500));
-      setMapDefaults(rows);
+      await setMapDefaults(rows);
       setStep("mapping");
     } catch (err) {
       setError(err?.message || "Import failed.");
@@ -309,18 +439,30 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
     const qq = q.toLowerCase();
     return sourceColumns.filter((c) => {
       const mapped = !!mapping[c];
-      const byTab = tab === "all" ? true : tab === "mapped" ? mapped : !mapped;
+      const conf = confidence[c] || 0;
+      
+      let byTab = true;
+      if (tab === "mapped") byTab = mapped;
+      else if (tab === "unmapped") byTab = !mapped;
+      else if (tab === "high_confidence") byTab = mapped && conf >= 80;
+      
       const smpl = String(sampleFor(c) ?? "").toLowerCase();
       const bySearch = !qq || c.toLowerCase().includes(qq) || smpl.includes(qq);
       return byTab && bySearch;
     });
-  }, [sourceColumns, mapping, tab, q, sampleFor]);
+  }, [sourceColumns, mapping, confidence, tab, q, sampleFor]);
 
   const mappedCount = React.useMemo(
     () => Object.values(mapping).filter(Boolean).length,
     [mapping]
   );
-  const busy = uploading || parsing;
+  
+  const highConfidenceCount = React.useMemo(
+    () => Object.entries(confidence).filter(([k, v]) => mapping[k] && v >= 80).length,
+    [confidence, mapping]
+  );
+
+  const busy = uploading || parsing || aiMapping;
 
   // Type coercion helpers + row shaping
   const applyMapping = (rows, map, schemaObj) => {
@@ -370,7 +512,7 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
     const normalizeCompanyPayload = (obj) => {
       if (typeof obj.status === "string") {
         const s = obj.status.toLowerCase();
-        const map = {
+        const statusMap = {
           new: "prospect",
           prospect: "prospect",
           active: "active",
@@ -378,17 +520,17 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
           inactive: "inactive",
           closed: "inactive",
         };
-        obj.status = map[s] || "prospect";
+        obj.status = statusMap[s] || "prospect";
       }
       if (typeof obj.type === "string") {
         const s = obj.type.toLowerCase();
-        const map = {
+        const typeMap = {
           lead: "client",
           client: "client",
           vendor: "client",
           internal: "internal",
         };
-        obj.type = map[s] || "client";
+        obj.type = typeMap[s] || "client";
       }
       if (Array.isArray(obj.contacts)) {
         let contacts = [];
@@ -558,7 +700,7 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
       const isJob = !!schemaPropsLocal.company_id && !!schemaPropsLocal.title;
 
       if (isJob) {
-        const companies = await Company.list();
+        const companies = await base44.entities.Company.list();
         const idSet = new Set(companies.map((c) => c.id));
         const nameMap = new Map(
           companies.map((c) => [String(c.name || "").trim().toLowerCase(), c.id])
@@ -567,7 +709,7 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
         let defaultCompanyId =
           nameMap.get(defaultName.toLowerCase()) || nameMap.get("talent stack");
         if (!defaultCompanyId) {
-          const created = await Company.create({ name: defaultName, status: "prospect" });
+          const created = await base44.entities.Company.create({ name: defaultName, status: "prospect" });
           defaultCompanyId = created.id;
           nameMap.set(defaultName.toLowerCase(), created.id);
           idSet.add(created.id);
@@ -582,7 +724,7 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
           return { ...r, company_id: defaultCompanyId };
         });
       } else if (rows.some((r) => typeof r.company_id === "string" && r.company_id)) {
-        const companies = await Company.list();
+        const companies = await base44.entities.Company.list();
         const idSet = new Set(companies.map((c) => c.id));
         const nameMap = new Map(
           companies.map((c) => [String(c.name || "").trim().toLowerCase(), c.id])
@@ -620,8 +762,8 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
         try {
           const csv = toCSV(duplicates);
           const dupFile = new File([csv], "duplicates.csv", { type: "text/csv" });
-          const { file_url } = await UploadFile({ file: dupFile });
-          if (myEmail) { // FIX: send to current user
+          const { file_url } = await base44.integrations.Core.UploadFile({ file: dupFile });
+          if (myEmail) {
             await sendAppEmail({
               to: myEmail,
               subject: `Import duplicates for ${entityName || "records"}`,
@@ -655,9 +797,9 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
         try {
           const csv = toCSV(duplicates);
           const dupFile = new File([csv], "duplicates.csv", { type: "text/csv" });
-          const { file_url } = await UploadFile({ file: dupFile });
+          const { file_url } = await base44.integrations.Core.UploadFile({ file: dupFile });
           dupUrl = file_url;
-          if (myEmail) { // FIX: send to current user
+          if (myEmail) {
             await sendAppEmail({
               to: myEmail,
               subject: `Import duplicates for ${entityName || "records"}`,
@@ -674,7 +816,7 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
       clearTimeout(lrTimer);
       if (longRunRef.current) {
         try {
-          if (myEmail) { // FIX: send to current user
+          if (myEmail) {
             await sendAppEmail({
               to: myEmail,
               subject: `Import completed: ${entityName || "records"}`,
@@ -700,6 +842,18 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
     }
   };
 
+  const retryAiMapping = async () => {
+    if (preview.length === 0) return;
+    await setMapDefaults(preview);
+  };
+
+  const getConfidenceColor = (conf) => {
+    if (conf >= 90) return "bg-green-100 text-green-800 border-green-300";
+    if (conf >= 70) return "bg-blue-100 text-blue-800 border-blue-300";
+    if (conf >= 50) return "bg-yellow-100 text-yellow-800 border-yellow-300";
+    return "bg-red-100 text-red-800 border-red-300";
+  };
+
   if (!open) return null;
 
   return (
@@ -708,22 +862,42 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
       onClick={reset}
     >
       <Card
-        className="w-full max-w-5xl max-h-[90vh] flex flex-col"
+        className="w-full max-w-6xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <CardHeader className="flex items-center justify-between sticky top-0 bg-white z-10 border-b">
-          <CardTitle>Import {entityName}</CardTitle>
+          <div className="flex items-center gap-3">
+            <CardTitle>Import {entityName} with AI Field Mapping</CardTitle>
+            {aiMapping && (
+              <Badge className="bg-purple-100 text-purple-800 animate-pulse">
+                <Sparkles className="w-3 h-3 mr-1" />
+                AI Mapping...
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {step === "mapping" && preview.length > 0 && (
-              <Button
-                onClick={doInsert}
-                disabled={mappedCount === 0 || busy}
-                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                title={mappedCount === 0 ? "Map at least one column to enable upload" : "Upload mapped rows"}
-              >
-                <Upload className="w-4 h-4" />
-                Finish Upload
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={retryAiMapping}
+                  disabled={aiMapping}
+                  className="gap-2"
+                  title="Retry AI mapping"
+                >
+                  <RefreshCw className={`w-4 h-4 ${aiMapping ? 'animate-spin' : ''}`} />
+                  Re-map with AI
+                </Button>
+                <Button
+                  onClick={doInsert}
+                  disabled={mappedCount === 0 || busy}
+                  className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  title={mappedCount === 0 ? "Map at least one column to enable upload" : "Upload mapped rows"}
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload {mappedCount > 0 ? `(${mappedCount} mapped)` : ''}
+                </Button>
+              </>
             )}
             <input
               ref={fileInputRef}
@@ -757,6 +931,17 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
                   : "Ready"}
               </Badge>
               {fileName && <span className="text-slate-600 truncate">File: {fileName}</span>}
+              {mappedCount > 0 && step === "mapping" && (
+                <Badge className="bg-blue-100 text-blue-800">
+                  {mappedCount}/{sourceColumns.length} mapped
+                </Badge>
+              )}
+              {highConfidenceCount > 0 && step === "mapping" && (
+                <Badge className="bg-green-100 text-green-800">
+                  <Check className="w-3 h-3 mr-1" />
+                  {highConfidenceCount} high confidence
+                </Badge>
+              )}
               {inserted > 0 && (
                 <span className="flex items-center gap-1 text-green-700">
                   <CheckCircle2 className="w-4 h-4" /> Inserted {inserted}
@@ -765,25 +950,36 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
               {skipped > 0 && <span className="text-amber-700">• Skipped {skipped}</span>}
             </div>
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600">
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">
                 <AlertTriangle className="w-4 h-4" /> {error}
               </div>
             )}
-            {hint && <div className="text-xs text-slate-600">{hint}</div>}
+            {hint && (
+              <div className="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded p-3">
+                {hint}
+              </div>
+            )}
 
             {step === "ready" && (
-              <div className="border rounded-lg p-4 bg-slate-50">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-slate-900">Upload CSV / Excel / PDF / Image</p>
-                    <p className="text-xs text-slate-600">
-                      CSV/TSV are parsed locally for speed; other formats use server extraction.
-                    </p>
+              <div className="border-2 border-dashed rounded-lg p-8 bg-gradient-to-br from-blue-50 to-purple-50">
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                    <Sparkles className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <Button onClick={() => fileInputRef.current?.click()} className="gap-2">
-                      <Upload className="w-4 h-4" /> Choose File
-                    </Button>
+                    <p className="font-semibold text-lg text-slate-900 mb-2">
+                      AI-Powered Smart Import
+                    </p>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Upload your CSV and our AI will automatically map columns to the correct fields
+                    </p>
+                  </div>
+                  <Button onClick={() => fileInputRef.current?.click()} className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    <Upload className="w-4 h-4" />
+                    Choose File to Import
+                  </Button>
+                  <div className="text-xs text-slate-500">
+                    Supports CSV, TSV, Excel, PDF, and image files
                   </div>
                 </div>
               </div>
@@ -791,10 +987,15 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
 
             {step === "mapping" && preview.length > 0 && (
               <div className="space-y-3">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">Map Columns</Badge>
-                    <span className="text-xs text-slate-600">Mapped {mappedCount}/{sourceColumns.length}</span>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary" className="gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      AI Mapping Review
+                    </Badge>
+                    <span className="text-sm text-slate-600">
+                      Review AI suggestions and adjust if needed
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -802,67 +1003,117 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
                       variant={tab === "all" ? "default" : "outline"}
                       onClick={() => setTab("all")}
                     >
-                      All
+                      All ({sourceColumns.length})
                     </Button>
                     <Button
                       size="sm"
                       variant={tab === "mapped" ? "default" : "outline"}
                       onClick={() => setTab("mapped")}
                     >
-                      Mapped
+                      Mapped ({mappedCount})
                     </Button>
                     <Button
                       size="sm"
                       variant={tab === "unmapped" ? "default" : "outline"}
                       onClick={() => setTab("unmapped")}
                     >
-                      Unmapped
+                      Unmapped ({sourceColumns.length - mappedCount})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={tab === "high_confidence" ? "default" : "outline"}
+                      onClick={() => setTab("high_confidence")}
+                      className="gap-1"
+                    >
+                      <Check className="w-3 h-3" />
+                      High Confidence ({highConfidenceCount})
                     </Button>
                   </div>
                 </div>
 
-                <Input placeholder="Quick find…" value={q} onChange={(e) => setQ(e.target.value)} />
+                <Input 
+                  placeholder="Search columns or sample data..." 
+                  value={q} 
+                  onChange={(e) => setQ(e.target.value)}
+                  className="max-w-md"
+                />
 
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="overflow-auto h-[60vh]">
+                <div className="border rounded-lg overflow-hidden shadow-sm">
+                  <div className="overflow-auto max-h-[55vh]">
                     <table className="min-w-full text-sm">
-                      <thead className="bg-slate-50 sticky top-0 z-10">
+                      <thead className="bg-slate-100 sticky top-0 z-10">
                         <tr>
-                          <th className="text-left px-4 py-3 font-medium text-slate-600 w-[35%]">Source Header</th>
-                          <th className="text-left px-4 py-3 font-medium text-slate-600 w-[35%]">Sample Data</th>
-                          <th className="text-left px-4 py-3 font-medium text-slate-600 w-[30%]">Destination Field</th>
+                          <th className="text-left px-4 py-3 font-semibold text-slate-700 w-[25%]">CSV Column</th>
+                          <th className="text-left px-4 py-3 font-semibold text-slate-700 w-[25%]">Sample Data</th>
+                          <th className="text-left px-4 py-3 font-semibold text-slate-700 w-[30%]">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-purple-600" />
+                              AI Suggested Field
+                            </div>
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold text-slate-700 w-[20%]">Confidence</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredColumns.map((col) => (
-                          <tr key={col} className="border-t">
-                            <td className="px-4 py-3 font-medium text-slate-900">{col}</td>
-                            <td className="px-4 py-3 text-slate-700 truncate">
-                              {String(sampleFor(col) ?? "")}
-                            </td>
-                            <td className="px-4 py-3">
-                              <Select
-                                value={mapping[col] || ""}
-                                onValueChange={(v) => setMapping({ ...mapping, [col]: v })}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select destination" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.keys(schemaProps).map((k) => (
-                                    <SelectItem key={k} value={k}>
-                                      {k}
+                        {filteredColumns.map((col) => {
+                          const conf = confidence[col] || 0;
+                          const reason = reasoning[col] || "";
+                          
+                          return (
+                            <tr key={col} className="border-t hover:bg-slate-50 transition-colors">
+                              <td className="px-4 py-3 font-medium text-slate-900">
+                                {col}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600 truncate max-w-[200px]">
+                                {String(sampleFor(col) ?? "")}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Select
+                                  value={mapping[col] || ""}
+                                  onValueChange={(v) => setMapping({ ...mapping, [col]: v })}
+                                >
+                                  <SelectTrigger className={`w-full ${mapping[col] ? 'border-green-300 bg-green-50' : ''}`}>
+                                    <SelectValue placeholder="Select field or ignore" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.keys(schemaProps).map((k) => (
+                                      <SelectItem key={k} value={k}>
+                                        <div className="flex items-center gap-2">
+                                          <span>{k}</span>
+                                          {mapping[col] === k && conf >= 80 && (
+                                            <Badge className="text-xs bg-green-100 text-green-800">
+                                              AI Match
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                    <SelectItem value={null}>
+                                      <span className="text-slate-400">— Ignore Column —</span>
                                     </SelectItem>
-                                  ))}
-                                  <SelectItem value={null}>— Ignore —</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </td>
-                          </tr>
-                        ))}
+                                  </SelectContent>
+                                </Select>
+                                {reason && (
+                                  <p className="text-xs text-slate-500 mt-1 italic">
+                                    {reason}
+                                  </p>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                {mapping[col] && conf > 0 ? (
+                                  <Badge className={getConfidenceColor(conf)}>
+                                    {conf}% confident
+                                  </Badge>
+                                ) : (
+                                  <span className="text-xs text-slate-400">No mapping</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                         {filteredColumns.length === 0 && (
                           <tr>
-                            <td className="px-4 py-6 text-center text-slate-500" colSpan={3}>
+                            <td className="px-4 py-8 text-center text-slate-500" colSpan={4}>
                               No columns match your filter.
                             </td>
                           </tr>
@@ -871,15 +1122,25 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
                     </table>
                   </div>
 
-                  <div className="flex items-center justify-between px-3 py-2 bg-white border-t sticky bottom-0">
+                  <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t sticky bottom-0">
                     <div className="text-xs text-slate-600">
-                      Mapped {mappedCount}/{sourceColumns.length}. Only mapped columns will be uploaded.
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                        <span>
+                          Mapped {mappedCount}/{sourceColumns.length} columns
+                          {highConfidenceCount > 0 && ` • ${highConfidenceCount} high confidence matches`}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={reset}>Cancel</Button>
-                      <Button onClick={doInsert} disabled={mappedCount === 0 || busy} className="gap-2">
+                      <Button 
+                        onClick={doInsert} 
+                        disabled={mappedCount === 0 || busy} 
+                        className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
                         <Upload className="w-4 h-4" />
-                        Upload
+                        Import {preview.length} Rows
                       </Button>
                     </div>
                   </div>
@@ -888,21 +1149,25 @@ export default function ImportModal({ open, onClose, entityName, entitySdk, onIm
             )}
 
             {step === "inserting" && (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <Loader2 className="w-4 h-4 animate-spin" /> Uploading records…
+              <div className="flex flex-col items-center gap-3 py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <p className="text-sm text-slate-700">Uploading records...</p>
               </div>
             )}
 
             {step === "done" && (
-              <div className="flex items-center justify-between">
-                <div className="text-sm">
-                  <span className="text-green-700 font-medium">Import completed.</span>{" "}
-                  <span className="text-slate-700">
-                    Inserted {inserted} {entityName?.toLowerCase() || "records"}
-                    {skipped ? `, skipped ${skipped}.` : "."}
-                  </span>
+              <div className="flex flex-col items-center gap-4 py-8">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-green-600" />
                 </div>
-                <Button variant="outline" onClick={reset}>Close</Button>
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-green-700 mb-2">Import completed!</p>
+                  <p className="text-sm text-slate-600">
+                    Inserted {inserted} {entityName?.toLowerCase() || "records"}
+                    {skipped ? `, skipped ${skipped}` : ""}
+                  </p>
+                </div>
+                <Button onClick={reset}>Close</Button>
               </div>
             )}
           </div>
