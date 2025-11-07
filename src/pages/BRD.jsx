@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +14,11 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
-  Table,
-  Sparkles, // Added Sparkles import
-  MailPlus // Added MailPlus import
+  Sparkles,
+  MailPlus,
+  Brain,
+  BookOpen,
+  List
 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import Breadcrumbs from "@/components/common/Breadcrumbs";
@@ -54,7 +54,6 @@ const EntityCard = ({ entity, expanded, onToggle }) => {
       
       {expanded && (
         <CardContent className="space-y-4">
-          {/* Fields */}
           <div>
             <h4 className="font-semibold text-sm mb-3">Fields</h4>
             <div className="space-y-2">
@@ -80,7 +79,6 @@ const EntityCard = ({ entity, expanded, onToggle }) => {
             </div>
           </div>
 
-          {/* Relationships */}
           {entity.relationships?.length > 0 && (
             <div>
               <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
@@ -99,7 +97,6 @@ const EntityCard = ({ entity, expanded, onToggle }) => {
             </div>
           )}
 
-          {/* Built-in Fields */}
           <div className="bg-slate-100 rounded p-3">
             <p className="text-xs text-slate-600 mb-2">
               <strong>Built-in fields (auto-generated):</strong>
@@ -121,12 +118,17 @@ export default function BRD() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedEntities, setExpandedEntities] = useState({});
   const [activeTab, setActiveTab] = useState("overview");
+  const [expandedSection, setExpandedSection] = useState(null);
 
   const toggleEntity = (entityName) => {
     setExpandedEntities(prev => ({
       ...prev,
       [entityName]: !prev[entityName]
     }));
+  };
+
+  const toggleSection = (sectionId) => {
+    setExpandedSection(prev => prev === sectionId ? null : sectionId);
   };
 
   // Data Model Definition
@@ -383,7 +385,7 @@ export default function BRD() {
     ai: [
       {
         name: "MatchingProfile",
-        description: "AI matching configuration profiles",
+        description: "AI matching configuration profiles with weighted criteria",
         fields: [
           { name: "name", type: "string", required: true, description: "Profile name" },
           { name: "job_type", type: "string", required: true, description: "Job category" },
@@ -401,7 +403,7 @@ export default function BRD() {
       },
       {
         name: "MatchFeedback",
-        description: "User feedback on AI match quality",
+        description: "User feedback on AI match quality for continuous learning",
         fields: [
           { name: "matching_profile_id", type: "string", isLookup: true, references: "MatchingProfile", description: "Profile used" },
           { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Matched candidate" },
@@ -511,7 +513,6 @@ export default function BRD() {
     ]
   };
 
-  // Flatten all entities for search
   const allEntities = [
     ...dataModel.core,
     ...dataModel.recruitment,
@@ -539,11 +540,39 @@ export default function BRD() {
     { key: "finance", label: "Finance & Billing", entities: dataModel.finance, color: "cyan" }
   ];
 
-  const sections = [
+  const documentSections = [
     {
+      id: "toc",
+      icon: List,
+      title: "Table of Contents",
+      content: (
+        <div className="space-y-2 text-sm">
+          <ol className="list-decimal list-inside space-y-1 ml-4">
+            <li>Project Overview & Goals</li>
+            <li>Users & Roles</li>
+            <li>Functional Requirements</li>
+            <li>Non-Functional Requirements</li>
+            <li>Data Model Overview</li>
+            <li>Role/Permissions Matrix</li>
+            <li>Integrations</li>
+            <li>Acceptance Criteria</li>
+            <li>Future Enhancements</li>
+            <li>Glossary</li>
+            <li>UI/Branding Update Overview</li>
+            <li>Recent Updates & New Features</li>
+            <li>AI Quick Actions - Detailed Specification</li>
+            <li>Paste to Add Candidate - Detailed Specification</li>
+            <li className="text-purple-700 font-semibold">NEW: AI Agent System</li>
+            <li className="text-purple-700 font-semibold">NEW: Email Blast System</li>
+            <li className="text-purple-700 font-semibold">NEW: Advanced AI Matching</li>
+          </ol>
+        </div>
+      )
+    },
+    {
+      id: "overview",
       icon: Target,
-      title: "Overview",
-      description: "High-level system architecture and purpose",
+      title: "1. Project Overview & Goals",
       content: (
         <div className="space-y-4">
           <p className="text-slate-700 leading-relaxed">
@@ -552,35 +581,48 @@ export default function BRD() {
             through placement and invoicing.
           </p>
 
-          {/* NEW: Recent Updates Section */}
           <Card className="border-l-4 border-l-purple-500 bg-purple-50">
             <CardContent className="p-4">
               <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                Latest Updates & Features
+                Latest Updates & Features (December 2024)
               </h4>
               <div className="space-y-2 text-sm text-purple-800">
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[120px]">AI Agents:</span>
+                  <span className="font-semibold min-w-[140px]">AI Agents:</span>
                   <span>Intelligent automation agents that trigger on entity events (e.g., job creation) to perform AI analysis, create applications, and execute complex workflows</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[120px]">Email Blast:</span>
+                  <span className="font-semibold min-w-[140px]">Email Blast:</span>
                   <span>Mass email campaign tool for reaching all company contacts with AI-generated content and CSV export capabilities</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[120px]">Advanced Matching:</span>
+                  <span className="font-semibold min-w-[140px]">Advanced Matching:</span>
                   <span>Configurable AI matching with weighted criteria, multiple reasoning models (o1, Claude 4.5, GPT-5), learning from feedback, and performance tracking</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[120px]">Workflow Automation:</span>
-                  <span>Auto-completion of related tasks, background AI job matching on creation, and contextual AI assistance across the platform</span>
+                  <span className="font-semibold min-w-[140px]">AI Quick Actions:</span>
+                  <span>Conversational AI assistant (⌘J) for navigation, entity creation, and candidate parsing from pasted text</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold min-w-[140px]">Paste to Add:</span>
+                  <span>Quick candidate creation by pasting resume text or LinkedIn bios with automatic field extraction</span>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          <h4 className="font-semibold text-slate-900 mt-6 mb-3">Core Objectives</h4>
+          <ul className="space-y-2 text-sm text-slate-700">
+            <li>• End-to-end recruitment workspace covering Candidates, Jobs, Companies (Connections), Submissions/Applications, Tasks, Invoices/Expenses, and Resumes</li>
+            <li>• Saved list views with visibility controls (Private, Team, Public, Role-based) to avoid duplicates</li>
+            <li>• Bulk Bench Scoring on "Our Bench" or any saved view; score persisted to Candidate</li>
+            <li>• Global Preview Center with context, quick navigation, and explicit Edit navigation</li>
+            <li>• LLM-powered Ask AI with page-aware context and action mode</li>
+            <li>• Role-based access control and audit logging; customizable global dashboard widgets</li>
+          </ul>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             <Card className="border-l-4 border-l-blue-500">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-2">
@@ -621,68 +663,224 @@ export default function BRD() {
       )
     },
     {
+      id: "users",
       icon: Users,
-      title: "Key Features",
-      description: "Core capabilities and workflows",
+      title: "2. Users & Roles",
       content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
+        <div className="space-y-4 text-sm text-slate-700">
+          <div>
+            <h4 className="font-semibold text-base mb-2">Admin</h4>
+            <p>Full access to all entities; can manage Roles, DashboardConfig, and system settings. Can create global dashboards and shared views.</p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-base mb-2">Recruiter</h4>
+            <p>View most records; create/update own; limited deletes by scope. Can edit Candidates and update status; bulk scoring and views available per visibility.</p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-base mb-2">Candidate List Views</h4>
+            <p>Create views with filters, columns, sort; set default view. Visibility: Private, Team, Public, Role-based. Edit/Delete views (owner and admins only). RLS enforces visibility. Usable across pages and inside Bulk Scoring modal.</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: "features",
+      icon: Sparkles,
+      title: "3. Functional Requirements",
+      content: (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.1 Dashboard</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>KPIs and charts for pipeline at-a-glance</li>
+                <li>Quick Actions to add key records</li>
+                <li>"My Tasks Today" card with inline complete</li>
+                <li>Custom Global Dashboard (Admin): Builder composes global layout</li>
+                <li>Widget types: KPI, Bar, Pie, Line, Stacked</li>
+                <li className="text-purple-700 font-semibold">NEW: AI Pipeline Insights with skill gap analysis, hiring forecast, pipeline health</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.2 Candidates</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Search, filter, add/edit from modal</li>
+                <li>Candidate Details: Overview, Applications, Documents, Activity</li>
+                <li>Related panel: Applications, Submissions, Tasks, Resumes</li>
+                <li>AI Candidate Summary panel with regenerate and Q&A</li>
+                <li className="text-purple-700 font-semibold">NEW: Paste to Add for quick candidate creation from text</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.3 Jobs</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>List, search, filter; view details and associated applications</li>
+                <li>Track status, priority, location, compensation, due date</li>
+                <li>Email Blast to marketing recruiters and selected candidates</li>
+                <li className="text-purple-700 font-semibold">NEW: AI Candidate Matching with top 5 ranked candidates and fit scores</li>
+                <li className="text-purple-700 font-semibold">NEW: Auto-matching agent triggers on job creation</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.4 Submissions</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Create submission, status tracking, client feedback</li>
+                <li>Follow-up reminders with due indicators and quick actions</li>
+                <li>Auto-create next-day follow-up Task on submission create</li>
+                <li>Board/List views with saved views; drag-and-drop updates status</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.5 Resume Studio</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Build tab: inline editor (left), live preview (right), zoom, save, print</li>
+                <li>Score tab: paste/upload JD and Resume; compare text only</li>
+                <li>AI Resume Builder panel: generate tailored JSON resume</li>
+                <li>Scoring model weights: Hard Skills (highest), Education, Job Title, Soft Skills</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.6 AI Assistant (Global)</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Floating launcher opens side-panel chat on every page</li>
+                <li>Loads scoped context (Candidates, Jobs, Applications, etc.)</li>
+                <li>Quick prompts for pipeline, overdue tasks, and top matches</li>
+                <li className="text-purple-700 font-semibold">NEW: AI Quick Actions (⌘J) with conversational interface</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.7 Access Control</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Users list with search and role assignment</li>
+                <li>Roles & Permissions matrix: toggle View/Create/Edit/Delete per entity</li>
+                <li>Scope All/Own enforcement</li>
+                <li>UI enforcement via PermissionGate; server-side RLS mirrors rules</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.8 Connections & Tasks</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Connections (Companies): lists with search/filters; details modal</li>
+                <li className="text-purple-700 font-semibold">NEW: Connections Email Blast with AI content generation</li>
+                <li>Consultants, Tasks, Playbooks: lists with search; create/edit per permissions</li>
+                <li>Playbooks include rich details and document links</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.9 Email Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Email sending gated by Email Settings</li>
+                <li>Provider Gmail/Outlook and connected flag</li>
+                <li>All email features disabled until connected</li>
+                <li>From uses current user where supported</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.10 Accounts</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Invoices: create/edit items, tax, totals; email to contacts</li>
+                <li>Invoices summary shows Pending and Received totals</li>
+                <li>Expenses: track categories, date, amount, vendor, notes</li>
+                <li>CSV import planned via backend functions</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.11 My Work (Enhanced)</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Tab-Based Navigation: Overview, Quick Entry, Weekly Submit, Leave Requests</li>
+                <li>Quick Stats Cards: Hours this week, approved hours, pending leave</li>
+                <li>Quick Time Entry: Single-form entry saves as draft</li>
+                <li>Leave Validation: Blocks time entry on leave dates</li>
+                <li>Auto-Notifications: Admins notified on submissions</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.12 Approvals (Enhanced)</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Quick Stats: Pending leaves, timesheets, hours, users waiting</li>
+                <li>Batch Operations: "Approve All" for efficiency</li>
+                <li>Weekly Grouping: Timesheets grouped by user + week</li>
+                <li className="text-purple-700 font-semibold">NEW: AI Insights - Workload analysis, productivity score, leave patterns, approval efficiency</li>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3.13 Interview Assistant</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Question Library: Pre-built questions across 5 categories</li>
+                <li>Per-Question Rating: 1-5 scale slider for each question</li>
+                <li>Live Score Calculator: Auto-calculates overall score, completion %</li>
+                <li>AI Summary Integration: Uses calculated scores in analysis</li>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="bg-blue-50 border-blue-200 mt-6">
             <CardHeader>
-              <CardTitle className="text-base">Talent Management</CardTitle>
+              <CardTitle className="text-base text-blue-900">Bulk Bench Scoring</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <li>Candidate database with skills, experience, work auth</li>
-              <li>Resume parsing and version management</li>
-              <li>AI-powered candidate screening and matching</li>
-              <li>Bulk operations and import/export</li>
+            <CardContent className="text-sm text-blue-800 space-y-2">
+              <li>Select cohort via Candidate View (default: status=our_bench)</li>
+              <li>Select any Job with status Draft or Open</li>
+              <li>Skip candidates without resume; result marked as Skipped</li>
+              <li>Persist bench_match_score (0-100) and bench_score_details (JSON) to Candidate</li>
             </CardContent>
           </Card>
-          
-          <Card>
+
+          <Card className="bg-green-50 border-green-200 mt-4">
             <CardHeader>
-              <CardTitle className="text-base">Job & Application Tracking</CardTitle>
+              <CardTitle className="text-base text-green-900">Preview Center & Editing</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <li>Job requisition management with client companies</li>
-              <li>Multi-stage application pipeline</li>
-              <li>Interview scheduling and feedback</li>
-              <li>Submission tracking with client feedback</li>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">AI & Automation</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <li>Semantic candidate-job matching with configurable weights</li>
-              <li>Automated workflow rules and triggers</li>
-              <li>Candidate screening and outreach automation</li>
-              <li>Learning system with feedback loops</li>
-              <li className="font-semibold text-purple-700">NEW: AI Agents for entity-triggered workflows</li>
-              <li className="font-semibold text-purple-700">NEW: Background job matching on creation</li>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Business Management</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <li>Invoice generation and tracking</li>
-              <li>Expense management with recurring support</li>
-              <li>Recruiter performance metrics</li>
-              <li>Role-based access control</li>
-              <li className="font-semibold text-purple-700">NEW: Email blast campaigns with AI content generation</li>
+            <CardContent className="text-sm text-green-800 space-y-2">
+              <li>Right-side global preview for Candidate, Job, Company, Application, Task, Playbook</li>
+              <li>Explicit "Edit" actions bypass preview and navigate to full edit page</li>
+              <li>Inline status update for Candidate within preview</li>
             </CardContent>
           </Card>
         </div>
       )
     },
     {
-      icon: Zap,
-      title: "AI Agent System",
-      description: "Intelligent automation and workflow agents",
+      id: "ai-agents",
+      icon: Brain,
+      title: "NEW: AI Agent System",
       content: (
         <div className="space-y-4">
           <p className="text-slate-700 leading-relaxed">
@@ -749,13 +947,30 @@ export default function BRD() {
               </ul>
             </CardContent>
           </Card>
+
+          <Card className="bg-purple-50 border-purple-200">
+            <CardHeader>
+              <CardTitle className="text-base text-purple-900">Agent Builder UI</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-purple-800">
+              <p className="mb-2">Accessible from <strong>Admin Controls → AI Agents</strong>:</p>
+              <ul className="space-y-1 ml-4">
+                <li>• Visual agent management with performance stats</li>
+                <li>• Drag-and-drop action builder</li>
+                <li>• AI model selection (o1, GPT-4o, Claude 4.5, GPT-5)</li>
+                <li>• Enable/disable agents with one click</li>
+                <li>• Performance tracking: runs, successes, failures, avg duration</li>
+                <li>• Pre-configured agents: Job Matcher, Follow-up Reminder, Profile Enrichment</li>
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       )
     },
     {
+      id: "email-blast",
       icon: MailPlus,
-      title: "Email Blast System",
-      description: "Mass communication and campaign management",
+      title: "NEW: Email Blast System",
       content: (
         <div className="space-y-4">
           <p className="text-slate-700 leading-relaxed">
@@ -820,6 +1035,373 @@ export default function BRD() {
           </Card>
         </div>
       )
+    },
+    {
+      id: "advanced-matching",
+      icon: Target,
+      title: "NEW: Advanced AI Matching",
+      content: (
+        <div className="space-y-4">
+          <p className="text-slate-700 leading-relaxed">
+            Advanced AI-powered candidate matching with configurable weighted criteria, multiple reasoning models,
+            learning from user feedback, and comprehensive performance tracking.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="border-l-4 border-l-pink-500">
+              <CardHeader>
+                <CardTitle className="text-base">Matching Profiles</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li><strong>Weighted Criteria:</strong> Customize weights for 7 dimensions (technical skills, experience, seniority, domain, soft skills, education, location)</li>
+                <li><strong>Skill Importance:</strong> Mark skills as "must_have", "preferred", or "nice_to_have"</li>
+                <li><strong>Soft Skills Extraction:</strong> AI extracts leadership, communication, collaboration from notes/profiles</li>
+                <li><strong>Multiple Strategies:</strong> Balanced, Strict, Lenient, or Learning modes</li>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-indigo-500">
+              <CardHeader>
+                <CardTitle className="text-base">AI Models Available</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li><strong>OpenAI o1:</strong> Reasoning model - best for complex multi-criteria analysis</li>
+                <li><strong>Claude 4.5 Opus:</strong> Balanced performance and accuracy</li>
+                <li><strong>GPT-5 Preview:</strong> Latest capabilities with advanced understanding</li>
+                <li><strong>GPT-4o:</strong> Fast and reliable for standard matching</li>
+                <li><strong>Auto-select:</strong> System picks best model for the task</li>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="text-base text-blue-900">Feedback Loop & Learning</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-blue-800 space-y-2">
+              <li><strong>Star Ratings:</strong> 1-5 star feedback on match quality</li>
+              <li><strong>Action Tracking:</strong> Viewed, contacted, interviewed, hired, rejected, skipped</li>
+              <li><strong>Criteria Accuracy:</strong> Feedback on specific scoring dimensions</li>
+              <li><strong>Continuous Learning:</strong> AI adapts weights based on feedback</li>
+              <li><strong>Performance Metrics:</strong> Tracks acceptance/rejection rates and accuracy over time</li>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-green-50 border-green-200">
+            <CardHeader>
+              <CardTitle className="text-base text-green-900">Matching Component Features</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-green-800">
+              <ul className="space-y-1 ml-4">
+                <li>• Multi-dimensional scoring across all weighted criteria</li>
+                <li>• Visual progress bars for each criterion (technical skills, experience, etc.)</li>
+                <li>• Detailed strengths and concerns breakdown</li>
+                <li>• Soft skills identification from candidate profiles</li>
+                <li>• AI reasoning display (step-by-step thought process)</li>
+                <li>• Match recommendations: Strong match, good match, potential match, poor match</li>
+                <li>• Quick actions: Email candidate, view profile, provide feedback</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    },
+    {
+      id: "ai-quick-actions",
+      icon: Zap,
+      title: "AI Quick Actions - Detailed Specification",
+      content: (
+        <div className="space-y-4">
+          <Card className="bg-slate-50">
+            <CardHeader>
+              <CardTitle className="text-base">Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-slate-700">
+              <p className="mb-3">
+                AI Quick Actions transforms the traditional quick action button into an intelligent conversational assistant
+                that understands natural language and can perform complex operations through simple chat interactions.
+              </p>
+              <p className="font-semibold">Access: ⌘J / Ctrl+J or floating button (bottom-right)</p>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="border-l-4 border-l-blue-500">
+              <CardHeader>
+                <CardTitle className="text-base">Key Capabilities</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li><strong>Natural Language Understanding:</strong> Processes conversational requests and determines intent</li>
+                <li><strong>Context-Aware:</strong> Understands user role and permissions</li>
+                <li><strong>Multi-Intent Support:</strong> Navigation, entity creation, information queries, bulk text parsing</li>
+                <li><strong>Intelligent Data Extraction:</strong> Extracts contact details, professional info, skills, location from pasted text</li>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-green-500">
+              <CardHeader>
+                <CardTitle className="text-base">Technical Implementation</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>LLM Integration using Core.InvokeLLM with structured JSON schema</li>
+                <li>Action types: navigate, create_candidate, create_job, create_company, create_task, search</li>
+                <li>State management with conversation history for context</li>
+                <li>Permissions validation before executing actions</li>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="bg-purple-50 border-purple-200">
+            <CardHeader>
+              <CardTitle className="text-base text-purple-900">Example Interactions</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-purple-800 space-y-3">
+              <div>
+                <p className="font-semibold">User: "Add a candidate named John Doe"</p>
+                <p className="text-xs mt-1">AI: "I'll help you add a new candidate. Opening the Candidates page with the add form..."</p>
+                <p className="text-xs text-purple-600">→ Navigates to Candidates page and triggers add form</p>
+              </div>
+              <div>
+                <p className="font-semibold">User: "Manikishore Dasari, Senior Java Developer with 11+ years..."</p>
+                <p className="text-xs mt-1">AI: "I've extracted the candidate information! Creating a new candidate record..."</p>
+                <p className="text-xs text-purple-600">→ Creates candidate with parsed data</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    },
+    {
+      id: "paste-to-add",
+      icon: FileText,
+      title: "Paste to Add Candidate - Detailed Specification",
+      content: (
+        <div className="space-y-4">
+          <Card className="bg-slate-50">
+            <CardHeader>
+              <CardTitle className="text-base">Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-slate-700">
+              <p>
+                Paste to Add provides a dedicated interface for quickly adding candidates by pasting resume text,
+                LinkedIn profiles, or any candidate information. AI automatically extracts structured data eliminating manual form filling.
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="border-l-4 border-l-cyan-500">
+              <CardHeader>
+                <CardTitle className="text-base">Access Points</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li>Candidates Page: "Paste to Add" button in header toolbar (purple gradient)</li>
+                <li>AI Quick Actions: Through conversational commands</li>
+                <li>Keyboard Shortcut: Available through suggested actions</li>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-teal-500">
+              <CardHeader>
+                <CardTitle className="text-base">Data Extraction</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <li><strong>Contact Info:</strong> Name, email, phone using pattern matching</li>
+                <li><strong>Professional:</strong> Title, company, years of experience</li>
+                <li><strong>Technical Skills:</strong> Languages, frameworks, tools</li>
+                <li><strong>Work Auth:</strong> H1B, Green Card, US Citizen detection</li>
+                <li><strong>Summary:</strong> Professional bio; original text stored in notes</li>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="bg-amber-50 border-amber-200">
+            <CardHeader>
+              <CardTitle className="text-base text-amber-900">Example Input & Output</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-amber-800">
+              <p className="mb-2"><strong>Input:</strong></p>
+              <pre className="bg-white rounded p-3 text-xs mb-3 overflow-x-auto">
+Manikishore Dasari, Senior Java/J2EE Full Stack Developer with 11+ years...
+📧 Email: manidasari104@gmail.com 📞 Phone: 469-722-1749
+Skills: Java, Spring Boot, AWS, Angular, ReactJS...
+              </pre>
+              <p className="mb-2"><strong>Extracted:</strong></p>
+              <ul className="space-y-1 ml-4 text-xs">
+                <li>• first_name: "Manikishore"</li>
+                <li>• last_name: "Dasari"</li>
+                <li>• email: "manidasari104@gmail.com"</li>
+                <li>• phone: "469-722-1749"</li>
+                <li>• current_title: "Senior Java/J2EE Full Stack Developer"</li>
+                <li>• experience_years: 11</li>
+                <li>• skills: ["Java", "Spring Boot", "AWS", "Angular", "ReactJS"...]</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    },
+    {
+      id: "profile-resolver",
+      icon: Search,
+      title: "Profile Resolver & Matching Engine",
+      content: (
+        <div className="space-y-4">
+          <Card className="bg-slate-50">
+            <CardHeader>
+              <CardTitle className="text-base">Business Problem & Opportunity</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-slate-700">
+              <p className="mb-2">Data is fragmented across entities; manual cross-referencing is slow and error-prone.</p>
+              <p>An intelligent resolver provides instant, actionable insights and a single source of truth.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="text-base text-blue-900">Functional Requirements</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-blue-800">
+              <ul className="space-y-1 ml-4">
+                <li>• FR-001: Unified search bar in main layout</li>
+                <li>• FR-002: Parse identifiers (email, LinkedIn, name + company)</li>
+                <li>• FR-003: Parallel searches across Candidate, Recruiter, Company</li>
+                <li>• FR-004: Aggregate and deduplicate into Master Profiles with source tracking</li>
+                <li>• FR-005: Show relationships (applications, submissions, jobs)</li>
+                <li>• FR-006: Provide contextual actions (e.g., find similar candidates)</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-green-50 border-green-200">
+            <CardHeader>
+              <CardTitle className="text-base text-green-900">Power Engine Logic (Pseudocode)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-xs bg-white rounded p-3 overflow-x-auto text-green-900">
+{`function resolveProfile(query) {
+  // 1. Parse & Enrich Query
+  const parsedQuery = parseQueryForIdentifiers(query);
+  
+  // 2. Parallel Internal Searches
+  const [candidateResults, recruiterResults, companyResults] = 
+    await Promise.all([
+      Candidate.search(parsedQuery),
+      Recruiter.search(parsedQuery),
+      Company.search(parsedQuery.company || parsedQuery.name),
+    ]);
+  
+  // 3. Aggregate & Deduplicate
+  const masterProfiles = new Map();
+  // ... aggregation logic ...
+  
+  // 4. Map Relationships
+  for (const profile of masterProfiles.values()) {
+    const applications = await Application.filter({ 
+      candidate_id: cand.id 
+    });
+    profile.relationships.push({ 
+      type: "APPLIED_TO", 
+      records: applications 
+    });
+  }
+  
+  // 5. Return Profiles
+  return Array.from(masterProfiles.values());
+}`}
+              </pre>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    },
+    {
+      id: "non-functional",
+      icon: Shield,
+      title: "4. Non-Functional Requirements",
+      content: (
+        <div className="space-y-3 text-sm text-slate-700">
+          <li>• Responsive UI for desktop and mobile</li>
+          <li>• Security via role-based permissions; platform authentication</li>
+          <li>• Performance optimizations (throttled loaders, caching of roles, limited AI context windows)</li>
+          <li>• Reliability: allow errors to bubble for fast fixes during development</li>
+          <li>• Branding: consistent gradient header and background per Layout</li>
+          <li>• Email safety: Sends gated by Email Settings (provider connected)</li>
+          <li>• UX: ESC closes major modals; consistent focus states and keyboard support</li>
+        </div>
+      )
+    },
+    {
+      id: "integrations",
+      icon: Zap,
+      title: "7. Integrations",
+      content: (
+        <div className="space-y-3 text-sm text-slate-700">
+          <li>• <strong>Core.InvokeLLM:</strong> Summaries, Ask AI, resume and bench scoring with strict JSON responses</li>
+          <li>• <strong>Core.UploadFile:</strong> Resume/JD uploads</li>
+          <li>• <strong>Core.ExtractDataFromUploadedFile:</strong> OCR/text extraction for data import</li>
+          <li>• <strong>Core.SendEmail:</strong> Submission emails and email blasts; gated by AppSettings</li>
+        </div>
+      )
+    },
+    {
+      id: "acceptance",
+      icon: CheckCircle,
+      title: "8. Acceptance Criteria",
+      content: (
+        <div className="space-y-3 text-sm text-slate-700">
+          <li>• Users can create, edit, delete, and select views; visibility and RLS enforced</li>
+          <li>• Bulk scoring uses selected view; supports Draft/Open jobs; skips no-resume; persists scores to Candidate</li>
+          <li>• Preview "Edit" navigates to full edit; candidate status editable inline</li>
+          <li>• Recruiter role can update Candidates; audit logs capture logins and key actions</li>
+          <li>• Dashboard builder (admin) publishes global widgets; non-admins see read-only layout</li>
+          <li>• Email features disabled until Gmail/Outlook is marked connected in Email Settings</li>
+          <li className="text-purple-700 font-semibold">• NEW: AI candidate-job matching displays top 5 ranked candidates on Job Details page</li>
+          <li className="text-purple-700 font-semibold">• NEW: AI agents execute on entity creation/update with background processing</li>
+          <li className="text-purple-700 font-semibold">• NEW: Email blast collects all company contacts with deduplication and CSV export</li>
+          <li className="text-purple-700 font-semibold">• NEW: Advanced matching uses configurable weights and multiple AI models</li>
+        </div>
+      )
+    },
+    {
+      id: "future",
+      icon: TrendingUp,
+      title: "9. Future Enhancements",
+      content: (
+        <div className="space-y-3 text-sm text-slate-700">
+          <li>• Advanced semantic matching models and similarity search</li>
+          <li>• Analytics for pipeline conversion and AI score impact</li>
+          <li>• Version history for resumes, views, and configurations</li>
+          <li className="text-purple-700 font-semibold">• Enhanced interview features - video recording, automated transcription, sentiment analysis</li>
+          <li className="text-purple-700 font-semibold">• Predictive analytics - success prediction, time-to-fill forecasting, offer acceptance probability</li>
+          <li className="text-purple-700 font-semibold">• Advanced automation - auto-scheduling interviews, smart nurturing campaigns, intelligent task assignment</li>
+          <li>• AI-driven follow-up suggestions for submissions and tasks</li>
+          <li>• Global search with AI-powered semantic search and fuzzy matching</li>
+        </div>
+      )
+    },
+    {
+      id: "glossary",
+      icon: BookOpen,
+      title: "10. Glossary",
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div className="space-y-2">
+            <div><strong>Match Score:</strong> Weighted alignment between resume and JD</div>
+            <div><strong>Fit Score:</strong> AI-calculated 0-100 score for candidate-job compatibility</div>
+            <div><strong>Scope (All/Own):</strong> Whether a role acts on all records or only created_by</div>
+            <div><strong>LLM:</strong> Large Language Model for summaries and insights</div>
+            <div><strong>Live Score Calculator:</strong> Real-time interview scoring as questions are answered</div>
+          </div>
+          <div className="space-y-2">
+            <div><strong>Pipeline Health:</strong> AI-assessed recruitment pipeline state (healthy/at_risk/critical)</div>
+            <div><strong>Workload Analysis:</strong> AI evaluation of team work hours and utilization</div>
+            <div><strong>AI Quick Actions:</strong> Conversational AI assistant via ⌘J for executing actions</div>
+            <div><strong>Paste to Add:</strong> Quick candidate creation from unstructured text</div>
+            <div><strong>Matching Profile:</strong> Configurable criteria weights and AI model selection for matching</div>
+          </div>
+        </div>
+      )
     }
   ];
 
@@ -829,10 +1411,9 @@ export default function BRD() {
       
       <PageHeader
         title="Business Requirements Document"
-        subtitle="Comprehensive system architecture and data model documentation"
+        subtitle="Comprehensive system architecture, data model, and feature documentation"
       />
 
-      {/* Navigation Tabs */}
       <div className="flex gap-2 border-b">
         <button
           onClick={() => setActiveTab("overview")}
@@ -843,7 +1424,7 @@ export default function BRD() {
           }`}
         >
           <FileText className="w-4 h-4 inline mr-2" />
-          Overview
+          Full Document
         </button>
         <button
           onClick={() => setActiveTab("datamodel")}
@@ -869,35 +1450,39 @@ export default function BRD() {
         </button>
       </div>
 
-      {/* Overview Tab */}
       {activeTab === "overview" && (
-        <div className="space-y-6">
-          {sections.map((section, idx) => {
+        <div className="space-y-4">
+          {documentSections.map((section) => {
             const Icon = section.icon;
+            const isExpanded = expandedSection === section.id;
+            
             return (
-              <Card key={idx}>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Icon className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
+              <Card key={section.id}>
+                <CardHeader 
+                  className="cursor-pointer hover:bg-slate-50"
+                  onClick={() => toggleSection(section.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Icon className="w-5 h-5 text-blue-600" />
+                      </div>
                       <CardTitle>{section.title}</CardTitle>
-                      <p className="text-sm text-slate-600 mt-1">{section.description}</p>
                     </div>
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </div>
                 </CardHeader>
-                <CardContent>{section.content}</CardContent>
+                {isExpanded && (
+                  <CardContent>{section.content}</CardContent>
+                )}
               </Card>
             );
           })}
         </div>
       )}
 
-      {/* Data Model Tab */}
       {activeTab === "datamodel" && (
         <div className="space-y-6">
-          {/* Search */}
           <Card>
             <CardContent className="p-4">
               <div className="relative">
@@ -912,7 +1497,6 @@ export default function BRD() {
             </CardContent>
           </Card>
 
-          {/* Entity Groups */}
           {entityGroups.map((group) => {
             const displayEntities = searchQuery
               ? group.entities.filter(e => filteredEntities.includes(e))
@@ -945,7 +1529,6 @@ export default function BRD() {
         </div>
       )}
 
-      {/* Relationships Tab */}
       {activeTab === "relationships" && (
         <div className="space-y-6">
           <Card>
@@ -956,26 +1539,25 @@ export default function BRD() {
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Core Recruitment Flow */}
               <div>
                 <h4 className="font-semibold mb-4 flex items-center gap-2">
                   <GitBranch className="w-5 h-5 text-blue-600" />
                   Core Recruitment Flow
                 </h4>
                 <div className="bg-slate-50 rounded-lg p-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-blue-100 text-blue-800">Company</Badge>
                     <span className="text-slate-600">→ has many →</span>
                     <Badge className="bg-purple-100 text-purple-800">Jobs</Badge>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
                     <span className="text-slate-600">→ applies to →</span>
                     <Badge className="bg-purple-100 text-purple-800">Jobs</Badge>
                     <span className="text-slate-600">→ creates →</span>
                     <Badge className="bg-green-100 text-green-800">Application</Badge>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-orange-100 text-orange-800">Recruiter</Badge>
                     <span className="text-slate-600">→ submits →</span>
                     <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
@@ -987,14 +1569,13 @@ export default function BRD() {
                 </div>
               </div>
 
-              {/* AI Matching System */}
               <div>
                 <h4 className="font-semibold mb-4 flex items-center gap-2">
                   <Zap className="w-5 h-5 text-pink-600" />
                   AI Matching System
                 </h4>
                 <div className="bg-slate-50 rounded-lg p-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-pink-100 text-pink-800">MatchingProfile</Badge>
                     <span className="text-slate-600">→ defines weights for →</span>
                     <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
@@ -1002,7 +1583,7 @@ export default function BRD() {
                     <Badge className="bg-purple-100 text-purple-800">Job</Badge>
                     <span className="text-slate-600">matching</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-pink-100 text-pink-800">MatchFeedback</Badge>
                     <span className="text-slate-600">→ trains →</span>
                     <Badge className="bg-pink-100 text-pink-800">MatchingProfile</Badge>
@@ -1011,24 +1592,23 @@ export default function BRD() {
                 </div>
               </div>
 
-              {/* Communication & Workflow */}
               <div>
                 <h4 className="font-semibold mb-4 flex items-center gap-2">
                   <Users className="w-5 h-5 text-green-600" />
                   Communication & Workflow
                 </h4>
                 <div className="bg-slate-50 rounded-lg p-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
                     <span className="text-slate-600">← receives ←</span>
                     <Badge className="bg-cyan-100 text-cyan-800">OutreachMessage</Badge>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-green-100 text-green-800">Task</Badge>
                     <span className="text-slate-600">→ can link to →</span>
                     <span className="text-slate-600">[Candidate | Job | Company | Submission]</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-cyan-100 text-cyan-800">InterviewSession</Badge>
                     <span className="text-slate-600">→ connects →</span>
                     <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
@@ -1038,20 +1618,19 @@ export default function BRD() {
                 </div>
               </div>
 
-              {/* Admin & Security */}
               <div>
                 <h4 className="font-semibold mb-4 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-orange-600" />
                   Admin & Security
                 </h4>
                 <div className="bg-slate-50 rounded-lg p-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-orange-100 text-orange-800">User</Badge>
                     <span className="text-slate-600">→ has one →</span>
                     <Badge className="bg-orange-100 text-orange-800">Role</Badge>
                     <span className="text-slate-600">→ defines permissions</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
                     <Badge className="bg-cyan-100 text-cyan-800">EmailTemplate</Badge>
                     <span className="text-slate-600">→ used by →</span>
                     <Badge className="bg-green-100 text-green-800">AutomationRule</Badge>
@@ -1061,7 +1640,6 @@ export default function BRD() {
             </CardContent>
           </Card>
 
-          {/* Built-in Fields Notice */}
           <Card className="border-l-4 border-l-blue-500">
             <CardContent className="p-6">
               <h4 className="font-semibold mb-3 flex items-center gap-2">
