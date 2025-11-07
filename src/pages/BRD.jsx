@@ -1,953 +1,922 @@
-
-import React, { useEffect, useState } from "react";
-import PageHeader from "@/components/common/PageHeader";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  FileText,
+  Target,
+  Users,
+  Zap,
+  Shield,
+  Database,
+  GitBranch,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Table
+} from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
+import Breadcrumbs from "@/components/common/Breadcrumbs";
 
-// Entities (used to render live JSON Schemas below)
-import { Candidate } from "@/entities/Candidate";
-import { Company } from "@/entities/Company";
-import { Job } from "@/entities/Job";
-import { Application } from "@/entities/Application";
-import { Submission } from "@/entities/Submission";
-import { Task } from "@/entities/Task";
-import { CandidateView } from "@/entities/CandidateView";
-import { SubmissionView } from "@/entities/SubmissionView";
-import { TaskView } from "@/entities/TaskView";
-import { DashboardConfig } from "@/entities/DashboardConfig";
-import { EmailTemplate } from "@/entities/EmailTemplate";
-import { AppSettings } from "@/entities/AppSettings";
-// Removed EmailIntegrationSettings and InboundEmail
-import { JobStack } from "@/entities/JobStack";
-import { Role } from "@/entities/Role";
-import { Resume } from "@/entities/Resume";
-import { Invoice } from "@/entities/Invoice";
-import { Expense } from "@/entities/Expense";
-import { AuditLog } from "@/entities/AuditLog";
-import { User as UserEntity } from "@/entities/User";
-import { InboundEmail } from "@/entities/InboundEmail"; // Added InboundEmail import
+const EntityCard = ({ entity, expanded, onToggle }) => {
+  const getFieldTypeColor = (type) => {
+    const colors = {
+      string: "bg-blue-100 text-blue-800",
+      number: "bg-green-100 text-green-800",
+      boolean: "bg-purple-100 text-purple-800",
+      array: "bg-orange-100 text-orange-800",
+      object: "bg-pink-100 text-pink-800",
+      date: "bg-cyan-100 text-cyan-800"
+    };
+    return colors[type] || "bg-gray-100 text-gray-800";
+  };
 
-// Helper: fetch and show live JSON schema for an entity
-function SchemaViewer({ title, entity }) {
-  const [schema, setSchema] = useState(null);
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const s = await entity.schema();
-        if (mounted) setSchema(s);
-      } catch {
-        setSchema({ error: "Schema unavailable" });
-      }
-    })();
-    return () => { mounted = false; };
-  }, [entity]);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
+    <Card className="border-l-4 border-l-blue-500">
+      <CardHeader className="cursor-pointer hover:bg-slate-50" onClick={onToggle}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Database className="w-5 h-5 text-blue-600" />
+            <CardTitle className="text-lg">{entity.name}</CardTitle>
+            <Badge variant="outline">{entity.fields.length} fields</Badge>
+          </div>
+          {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        </div>
+        {entity.description && (
+          <p className="text-sm text-slate-600 mt-2">{entity.description}</p>
+        )}
       </CardHeader>
-      <CardContent>
-        <pre className="text-xs bg-slate-50 p-3 rounded overflow-auto max-h-80">{schema ? JSON.stringify(schema, null, 2) : "Loading schema..."}</pre>
-      </CardContent>
+      
+      {expanded && (
+        <CardContent className="space-y-4">
+          {/* Fields */}
+          <div>
+            <h4 className="font-semibold text-sm mb-3">Fields</h4>
+            <div className="space-y-2">
+              {entity.fields.map((field, idx) => (
+                <div key={idx} className="flex items-start gap-3 p-2 rounded border bg-slate-50">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-sm font-medium">{field.name}</span>
+                      <Badge className={getFieldTypeColor(field.type)} variant="secondary">
+                        {field.type}
+                      </Badge>
+                      {field.required && (
+                        <Badge className="bg-red-100 text-red-800">required</Badge>
+                      )}
+                      {field.isLookup && (
+                        <Badge className="bg-indigo-100 text-indigo-800">→ {field.references}</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-600">{field.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Relationships */}
+          {entity.relationships?.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <GitBranch className="w-4 h-4" />
+                Relationships
+              </h4>
+              <div className="space-y-2">
+                {entity.relationships.map((rel, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm p-2 bg-blue-50 rounded">
+                    <span className="font-medium">{rel.type}:</span>
+                    <span>{rel.with}</span>
+                    <span className="text-slate-500">({rel.description})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Built-in Fields */}
+          <div className="bg-slate-100 rounded p-3">
+            <p className="text-xs text-slate-600 mb-2">
+              <strong>Built-in fields (auto-generated):</strong>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="text-xs">id</Badge>
+              <Badge variant="outline" className="text-xs">created_date</Badge>
+              <Badge variant="outline" className="text-xs">updated_date</Badge>
+              <Badge variant="outline" className="text-xs">created_by</Badge>
+            </div>
+          </div>
+        </CardContent>
+      )}
     </Card>
   );
-}
+};
 
 export default function BRD() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedEntities, setExpandedEntities] = useState({});
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const toggleEntity = (entityName) => {
+    setExpandedEntities(prev => ({
+      ...prev,
+      [entityName]: !prev[entityName]
+    }));
+  };
+
+  // Data Model Definition
+  const dataModel = {
+    core: [
+      {
+        name: "Candidate",
+        description: "Core entity representing job seekers and talent in the pipeline",
+        fields: [
+          { name: "first_name", type: "string", required: true, description: "First name" },
+          { name: "last_name", type: "string", required: true, description: "Last name" },
+          { name: "email", type: "string", required: true, description: "Email address" },
+          { name: "phone", type: "string", description: "Phone number" },
+          { name: "location", type: "string", description: "Current location" },
+          { name: "linkedin_url", type: "string", description: "LinkedIn profile URL" },
+          { name: "resume_url", type: "string", description: "Resume file URL" },
+          { name: "skills", type: "array", description: "Technical and professional skills" },
+          { name: "experience_years", type: "number", description: "Years of experience" },
+          { name: "current_title", type: "string", description: "Current job title" },
+          { name: "current_company", type: "string", description: "Current employer" },
+          { name: "salary_expectation", type: "number", description: "Salary expectation" },
+          { name: "availability", type: "string", description: "Availability timeframe (immediately, 2_weeks, 1_month, negotiable)" },
+          { name: "status", type: "string", description: "Candidate status (active, on_bench, our_bench, placed, inactive, do_not_contact, screened)" },
+          { name: "work_authorization", type: "string", description: "Work authorization status" },
+          { name: "notes", type: "string", description: "Internal notes" },
+          { name: "bench_match_score", type: "number", description: "AI bulk bench score (0-100)" },
+          { name: "screening_score", type: "number", description: "AI screening fit score (0-100)" }
+        ],
+        relationships: [
+          { type: "One-to-Many", with: "Application", description: "Candidates can have multiple job applications" },
+          { type: "One-to-Many", with: "Submission", description: "Candidates can be submitted to multiple jobs" },
+          { type: "One-to-Many", with: "Resume", description: "Candidates can have multiple resume versions" },
+          { type: "One-to-Many", with: "OutreachMessage", description: "Candidates receive outreach messages" }
+        ]
+      },
+      {
+        name: "Job",
+        description: "Job openings and requirements from client companies",
+        fields: [
+          { name: "title", type: "string", required: true, description: "Job title" },
+          { name: "company_id", type: "string", required: true, isLookup: true, references: "Company", description: "Company lookup" },
+          { name: "description", type: "string", description: "Job description" },
+          { name: "requirements", type: "string", description: "Required qualifications" },
+          { name: "location", type: "string", description: "Job location" },
+          { name: "remote_type", type: "string", description: "Work arrangement (onsite, remote, hybrid)" },
+          { name: "employment_type", type: "string", description: "Employment type (full_time, part_time, contract, contract_to_hire)" },
+          { name: "rate", type: "string", description: "Rate or salary range" },
+          { name: "priority", type: "string", description: "Job priority (low, medium, high, urgent)" },
+          { name: "status", type: "string", description: "Job status (draft, open, on_hold, filled, cancelled)" },
+          { name: "required_skills", type: "array", description: "Required technical skills" },
+          { name: "preferred_skills", type: "array", description: "Preferred additional skills" },
+          { name: "experience_required", type: "number", description: "Minimum years of experience" },
+          { name: "positions_available", type: "number", description: "Number of positions to fill" },
+          { name: "due_date", type: "date", description: "Target fill date" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "Company", description: "Jobs belong to a company" },
+          { type: "One-to-Many", with: "Application", description: "Jobs have multiple applications" },
+          { type: "One-to-Many", with: "Submission", description: "Jobs receive multiple submissions" }
+        ]
+      },
+      {
+        name: "Company",
+        description: "Client companies and internal organizations",
+        fields: [
+          { name: "name", type: "string", required: true, description: "Company name" },
+          { name: "industry", type: "string", description: "Industry sector" },
+          { name: "website", type: "string", description: "Company website" },
+          { name: "location", type: "string", description: "Primary location" },
+          { name: "description", type: "string", description: "Company description" },
+          { name: "type", type: "string", description: "Company type (client, internal)" },
+          { name: "status", type: "string", description: "Company status (active, prospect, inactive)" },
+          { name: "contacts", type: "array", description: "Company contacts with roles" },
+          { name: "job_stack_access", type: "boolean", description: "If true, contacts receive Job Stack emails" }
+        ],
+        relationships: [
+          { type: "One-to-Many", with: "Job", description: "Companies have multiple job openings" },
+          { type: "One-to-Many", with: "Invoice", description: "Companies receive invoices" }
+        ]
+      },
+      {
+        name: "Application",
+        description: "Candidate applications to specific jobs",
+        fields: [
+          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate lookup" },
+          { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Job lookup" },
+          { name: "status", type: "string", description: "Application status (sourced, applied, screening, submitted, interviewing, offered, hired, rejected, withdrawn)" },
+          { name: "stage_updated_date", type: "date", description: "When status was last updated" },
+          { name: "notes", type: "string", description: "Application notes" },
+          { name: "interview_dates", type: "array", description: "Interview history with feedback" },
+          { name: "submitted_by", type: "string", description: "Recruiter who submitted" },
+          { name: "client_feedback", type: "string", description: "Feedback from client" },
+          { name: "match_score", type: "number", description: "AI-generated match score (0-100)" },
+          { name: "score_details", type: "object", description: "Detailed score breakdown from AI" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "Candidate", description: "Application belongs to a candidate" },
+          { type: "Many-to-One", with: "Job", description: "Application is for a specific job" }
+        ]
+      }
+    ],
+    recruitment: [
+      {
+        name: "Submission",
+        description: "Candidate submissions to client jobs by recruiters",
+        fields: [
+          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate lookup" },
+          { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Job lookup" },
+          { name: "recruiter_id", type: "string", required: true, description: "Recruiter who made submission" },
+          { name: "submitted_date", type: "date", description: "Submission date" },
+          { name: "status", type: "string", description: "Submission status (submitted, under_review, interviewing, rejected, hired, withdrawn)" },
+          { name: "client_feedback", type: "string", description: "Client feedback" },
+          { name: "follow_up_date", type: "date", description: "Next follow-up date" },
+          { name: "follow_up_completed", type: "boolean", description: "Follow-up completion flag" },
+          { name: "interview_dates", type: "array", description: "Interview history" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "Candidate", description: "Submission is for a candidate" },
+          { type: "Many-to-One", with: "Job", description: "Submission is for a job" },
+          { type: "Many-to-One", with: "Recruiter", description: "Submission created by recruiter" }
+        ]
+      },
+      {
+        name: "Recruiter",
+        description: "Internal and external recruiters",
+        fields: [
+          { name: "first_name", type: "string", required: true, description: "First name" },
+          { name: "last_name", type: "string", required: true, description: "Last name" },
+          { name: "email", type: "string", required: true, description: "Email address" },
+          { name: "phone", type: "string", description: "Phone number" },
+          { name: "role", type: "string", description: "Recruiter type (internal, external, freelance)" },
+          { name: "specializations", type: "array", description: "Recruiting specializations" },
+          { name: "territory", type: "string", description: "Geographic territory" },
+          { name: "performance_metrics", type: "object", description: "Performance tracking metrics" },
+          { name: "status", type: "string", description: "Recruiter status (active, inactive, on_leave)" }
+        ],
+        relationships: [
+          { type: "One-to-Many", with: "Submission", description: "Recruiters create submissions" },
+          { type: "One-to-Many", with: "LeaveRequest", description: "Recruiters request leave" },
+          { type: "One-to-Many", with: "Timesheet", description: "Recruiters log time" }
+        ]
+      },
+      {
+        name: "Resume",
+        description: "Candidate resume versions and content",
+        fields: [
+          { name: "candidate_id", type: "string", isLookup: true, references: "Candidate", description: "Linked candidate" },
+          { name: "name", type: "string", required: true, description: "Display name" },
+          { name: "headline", type: "string", description: "Professional headline" },
+          { name: "email", type: "string", description: "Contact email" },
+          { name: "phone", type: "string", description: "Contact phone" },
+          { name: "summary", type: "string", description: "Professional summary" },
+          { name: "experiences", type: "array", description: "Work experience entries" },
+          { name: "education", type: "array", description: "Education entries" },
+          { name: "projects", type: "array", description: "Projects list" },
+          { name: "skills", type: "array", description: "Skills keywords" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "Candidate", description: "Resume belongs to candidate" }
+        ]
+      },
+      {
+        name: "OutreachMessage",
+        description: "Communication tracking with candidates",
+        fields: [
+          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate ID" },
+          { name: "job_id", type: "string", isLookup: true, references: "Job", description: "Related job (optional)" },
+          { name: "subject", type: "string", required: true, description: "Email subject" },
+          { name: "message", type: "string", required: true, description: "Message content" },
+          { name: "message_type", type: "string", description: "Type of outreach" },
+          { name: "channel", type: "string", description: "Communication channel (email, linkedin, phone)" },
+          { name: "status", type: "string", description: "Message status (draft, sent, delivered, opened, replied)" },
+          { name: "response_received", type: "boolean", description: "Response flag" },
+          { name: "sentiment", type: "string", description: "Response sentiment (positive, neutral, negative)" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "Candidate", description: "Outreach to candidate" },
+          { type: "Many-to-One", with: "Job", description: "Related to job (optional)" }
+        ]
+      },
+      {
+        name: "InterviewSession",
+        description: "Interview sessions and evaluations",
+        fields: [
+          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate ID" },
+          { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Job ID" },
+          { name: "interview_date", type: "date", required: true, description: "Interview date/time" },
+          { name: "interview_type", type: "string", required: true, description: "Interview type (phone_screen, technical, behavioral, etc.)" },
+          { name: "interviewer", type: "string", description: "Interviewer name/email" },
+          { name: "status", type: "string", description: "Interview status (scheduled, completed, cancelled, no_show)" },
+          { name: "questions", type: "array", description: "Interview questions and responses" },
+          { name: "overall_score", type: "number", description: "Overall interview score (0-100)" },
+          { name: "recommendation", type: "string", description: "Hiring recommendation" },
+          { name: "ai_summary", type: "string", description: "AI-generated interview summary" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "Candidate", description: "Interview with candidate" },
+          { type: "Many-to-One", with: "Job", description: "Interview for job" }
+        ]
+      }
+    ],
+    workflow: [
+      {
+        name: "Task",
+        description: "Work items and follow-ups",
+        fields: [
+          { name: "title", type: "string", required: true, description: "Task title" },
+          { name: "description", type: "string", description: "Task description" },
+          { name: "assigned_to", type: "string", required: true, description: "User email assigned to" },
+          { name: "related_entity", type: "string", description: "What this relates to (candidate, job, company, submission, general)" },
+          { name: "related_id", type: "string", description: "ID of related entity" },
+          { name: "priority", type: "string", description: "Task priority (low, medium, high, urgent)" },
+          { name: "status", type: "string", description: "Task status (pending, in_progress, completed, cancelled)" },
+          { name: "due_date", type: "date", description: "Due date" },
+          { name: "completion_notes", type: "string", description: "Notes upon completion" }
+        ],
+        relationships: [
+          { type: "Polymorphic", with: "Multiple", description: "Can link to Candidate, Job, Company, Submission" }
+        ]
+      },
+      {
+        name: "Playbook",
+        description: "Process documentation and best practices",
+        fields: [
+          { name: "title", type: "string", required: true, description: "Playbook title" },
+          { name: "description", type: "string", description: "Playbook description" },
+          { name: "category", type: "string", required: true, description: "Category (onboarding, recruiting, procedures, etc.)" },
+          { name: "documents", type: "array", description: "Linked documents and resources" },
+          { name: "steps", type: "array", description: "Step-by-step process with checklists" },
+          { name: "tags", type: "array", description: "Tags for organization" },
+          { name: "keywords", type: "array", description: "Search keywords for AI matching" },
+          { name: "usage_count", type: "number", description: "View count" },
+          { name: "is_active", type: "boolean", description: "Active flag" }
+        ],
+        relationships: []
+      },
+      {
+        name: "AutomationRule",
+        description: "Automated workflow rules and triggers",
+        fields: [
+          { name: "name", type: "string", required: true, description: "Rule name" },
+          { name: "trigger_type", type: "string", required: true, description: "What triggers automation (status_change, time_based, manual)" },
+          { name: "trigger_entity", type: "string", required: true, description: "Which entity triggers (Submission, Application, Task)" },
+          { name: "trigger_status_to", type: "string", description: "Status to trigger on" },
+          { name: "action_type", type: "string", required: true, description: "Action to perform (send_email, create_task, send_notification)" },
+          { name: "email_template_id", type: "string", isLookup: true, references: "EmailTemplate", description: "Email template to use" },
+          { name: "is_active", type: "boolean", description: "Rule active flag" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "EmailTemplate", description: "Uses email template" }
+        ]
+      }
+    ],
+    ai: [
+      {
+        name: "MatchingProfile",
+        description: "AI matching configuration profiles",
+        fields: [
+          { name: "name", type: "string", required: true, description: "Profile name" },
+          { name: "job_type", type: "string", required: true, description: "Job category" },
+          { name: "criteria_weights", type: "object", description: "Custom weights for matching criteria (should sum to 100)" },
+          { name: "required_skills", type: "array", description: "Skills with importance levels" },
+          { name: "soft_skills_keywords", type: "array", description: "Keywords to extract from profiles" },
+          { name: "ai_model", type: "string", description: "AI model to use (o1, claude-4.5, gpt-5, auto)" },
+          { name: "matching_strategy", type: "string", description: "Matching strategy (balanced, strict, lenient, learning)" },
+          { name: "learning_enabled", type: "boolean", description: "Learn from feedback" },
+          { name: "performance_metrics", type: "object", description: "Performance tracking" }
+        ],
+        relationships: [
+          { type: "One-to-Many", with: "MatchFeedback", description: "Has feedback entries" }
+        ]
+      },
+      {
+        name: "MatchFeedback",
+        description: "User feedback on AI match quality",
+        fields: [
+          { name: "matching_profile_id", type: "string", isLookup: true, references: "MatchingProfile", description: "Profile used" },
+          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Matched candidate" },
+          { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Matched job" },
+          { name: "match_score", type: "number", required: true, description: "AI-generated score (0-100)" },
+          { name: "user_rating", type: "number", description: "User rating (1-5 stars)" },
+          { name: "user_action", type: "string", description: "Action taken (viewed, contacted, interviewed, hired, rejected)" },
+          { name: "was_helpful", type: "boolean", description: "Helpful flag" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "MatchingProfile", description: "Feedback for profile" },
+          { type: "Many-to-One", with: "Candidate", description: "Feedback on candidate" },
+          { type: "Many-to-One", with: "Job", description: "Feedback for job" }
+        ]
+      }
+    ],
+    admin: [
+      {
+        name: "User",
+        description: "System users with roles and permissions",
+        fields: [
+          { name: "email", type: "string", description: "Email (built-in)" },
+          { name: "full_name", type: "string", description: "Full name (built-in)" },
+          { name: "role", type: "string", description: "Built-in role (admin, user)" },
+          { name: "role_id", type: "string", isLookup: true, references: "Role", description: "Custom role lookup" },
+          { name: "status", type: "string", description: "Access state (active, inactive, invited)" },
+          { name: "is_locked", type: "boolean", description: "Account locked flag" },
+          { name: "last_active", type: "date", description: "Last active timestamp" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "Role", description: "User has a role" }
+        ]
+      },
+      {
+        name: "Role",
+        description: "Permission roles for access control",
+        fields: [
+          { name: "name", type: "string", required: true, description: "Role name (e.g., Admin, Recruiter)" },
+          { name: "description", type: "string", description: "Role description" },
+          { name: "permissions", type: "object", required: true, description: "Map of entity permissions (view, create, update, delete, scope)" }
+        ],
+        relationships: [
+          { type: "One-to-Many", with: "User", description: "Role assigned to users" }
+        ]
+      },
+      {
+        name: "AuditLog",
+        description: "System audit trail",
+        fields: [
+          { name: "user_email", type: "string", required: true, description: "User email" },
+          { name: "action", type: "string", required: true, description: "Action performed" },
+          { name: "ip", type: "string", description: "IP address" },
+          { name: "user_agent", type: "string", description: "Browser user agent" },
+          { name: "meta", type: "object", description: "Extra metadata" }
+        ],
+        relationships: []
+      },
+      {
+        name: "EmailTemplate",
+        description: "Reusable email templates",
+        fields: [
+          { name: "title", type: "string", required: true, description: "Template title" },
+          { name: "subject", type: "string", description: "Email subject" },
+          { name: "category", type: "string", description: "Template category" },
+          { name: "blocks", type: "array", description: "Structured content blocks" },
+          { name: "html_body", type: "string", description: "Rendered HTML" },
+          { name: "is_active", type: "boolean", description: "Active flag" }
+        ],
+        relationships: [
+          { type: "One-to-Many", with: "AutomationRule", description: "Used by automation rules" }
+        ]
+      }
+    ],
+    finance: [
+      {
+        name: "Invoice",
+        description: "Client invoices for services",
+        fields: [
+          { name: "invoice_number", type: "string", required: true, description: "Invoice number" },
+          { name: "company_id", type: "string", required: true, isLookup: true, references: "Company", description: "Billed company" },
+          { name: "issue_date", type: "date", required: true, description: "Issue date" },
+          { name: "due_date", type: "date", required: true, description: "Due date" },
+          { name: "items", type: "array", required: true, description: "Line items with quantity and price" },
+          { name: "subtotal", type: "number", description: "Sum of items" },
+          { name: "tax_amount", type: "number", description: "Tax amount" },
+          { name: "total", type: "number", description: "Final total" },
+          { name: "status", type: "string", description: "Invoice status (draft, sent, paid, overdue, void)" }
+        ],
+        relationships: [
+          { type: "Many-to-One", with: "Company", description: "Invoice for company" }
+        ]
+      },
+      {
+        name: "Expense",
+        description: "Business expenses tracking",
+        fields: [
+          { name: "date", type: "date", required: true, description: "Expense date" },
+          { name: "name", type: "string", required: true, description: "Expense description" },
+          { name: "type", type: "string", required: true, description: "Expense category" },
+          { name: "amount", type: "number", required: true, description: "Amount" },
+          { name: "payment_method", type: "string", description: "Payment method" },
+          { name: "vendor", type: "string", description: "Vendor/Payee" },
+          { name: "is_recurring", type: "boolean", description: "Recurring flag" }
+        ],
+        relationships: []
+      }
+    ]
+  };
+
+  // Flatten all entities for search
+  const allEntities = [
+    ...dataModel.core,
+    ...dataModel.recruitment,
+    ...dataModel.workflow,
+    ...dataModel.ai,
+    ...dataModel.admin,
+    ...dataModel.finance
+  ];
+
+  const filteredEntities = allEntities.filter(entity =>
+    entity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    entity.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    entity.fields.some(field => 
+      field.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      field.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
+  const entityGroups = [
+    { key: "core", label: "Core Entities", entities: dataModel.core, color: "blue" },
+    { key: "recruitment", label: "Recruitment & Talent", entities: dataModel.recruitment, color: "purple" },
+    { key: "workflow", label: "Workflow & Process", entities: dataModel.workflow, color: "green" },
+    { key: "ai", label: "AI & Intelligence", entities: dataModel.ai, color: "pink" },
+    { key: "admin", label: "Admin & Security", entities: dataModel.admin, color: "orange" },
+    { key: "finance", label: "Finance & Billing", entities: dataModel.finance, color: "cyan" }
+  ];
+
+  const sections = [
+    {
+      icon: Target,
+      title: "Overview",
+      description: "High-level system architecture and purpose",
+      content: (
+        <div className="space-y-4">
+          <p className="text-slate-700 leading-relaxed">
+            <strong>TalentStack Recruiter X</strong> is a comprehensive recruitment management platform designed for staffing agencies
+            and internal recruiting teams. The system manages the complete recruitment lifecycle from candidate sourcing
+            through placement and invoicing.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-l-4 border-l-blue-500">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <Database className="w-5 h-5 text-blue-600" />
+                  <h4 className="font-semibold">Data Model</h4>
+                </div>
+                <p className="text-sm text-slate-600">
+                  {allEntities.length} entities with {allEntities.reduce((sum, e) => sum + e.fields.length, 0)} total fields
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-l-4 border-l-purple-500">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <GitBranch className="w-5 h-5 text-purple-600" />
+                  <h4 className="font-semibold">Relationships</h4>
+                </div>
+                <p className="text-sm text-slate-600">
+                  Complex relationship graph with lookups, one-to-many, and polymorphic links
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-l-4 border-l-green-500">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <Zap className="w-5 h-5 text-green-600" />
+                  <h4 className="font-semibold">AI-Powered</h4>
+                </div>
+                <p className="text-sm text-slate-600">
+                  Machine learning for candidate matching, screening, and workflow automation
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )
+    },
+    {
+      icon: Users,
+      title: "Key Features",
+      description: "Core capabilities and workflows",
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Talent Management</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              <li>Candidate database with skills, experience, work auth</li>
+              <li>Resume parsing and version management</li>
+              <li>AI-powered candidate screening and matching</li>
+              <li>Bulk operations and import/export</li>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Job & Application Tracking</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              <li>Job requisition management with client companies</li>
+              <li>Multi-stage application pipeline</li>
+              <li>Interview scheduling and feedback</li>
+              <li>Submission tracking with client feedback</li>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">AI & Automation</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              <li>Semantic candidate-job matching with configurable weights</li>
+              <li>Automated workflow rules and triggers</li>
+              <li>Candidate screening and outreach automation</li>
+              <li>Learning system with feedback loops</li>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Business Management</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              <li>Invoice generation and tracking</li>
+              <li>Expense management with recurring support</li>
+              <li>Recruiter performance metrics</li>
+              <li>Role-based access control</li>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
+      <Breadcrumbs items={[{ label: "BRD" }]} />
+      
       <PageHeader
-        title="BRD — Recruiter X"
-        subtitle="Structured Business Requirements Document with scope, data model, and AI details"
+        title="Business Requirements Document"
+        subtitle="Comprehensive system architecture and data model documentation"
       />
 
-      {/* Table of Contents */}
-      <Card id="toc">
-        <CardHeader>
-          <CardTitle>Table of Contents</CardTitle>
-        </CardHeader>
-        <CardContent className="text-slate-700 text-sm">
-          <ol className="list-decimal pl-5 space-y-1">
-            <li><a className="text-blue-600 hover:underline" href="#overview">Project Overview & Goals</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#users-roles">Users & Roles</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#functional">Functional Requirements</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#nonfunctional">Non‑Functional Requirements</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#data-model">Data Model Overview</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#permissions">Role/Permissions Matrix</a></li>
-            <li><a className="text-blue-600 hover=" href="#integrations">Integrations</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#acceptance">Acceptance Criteria</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#future">Future Enhancements</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#glossary">Glossary</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#branding">UI/Branding Update Overview</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#recent-updates">Recent Updates & New Features</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#ai-quick-actions">AI Quick Actions - Detailed Specification</a></li>
-            <li><a className="text-blue-600 hover:underline" href="#paste-to-add">Paste to Add Candidate - Detailed Specification</a></li>
-          </ol>
-        </CardContent>
-      </Card>
-
-      {/* Project Overview & Goals */}
-      <Card id="overview">
-        <CardHeader>
-          <CardTitle>Project Overview & Goals</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-slate-700">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>End‑to‑end recruitment workspace covering Candidates, Jobs, Companies (Connections), Submissions/Applications, Tasks, Invoices/Expenses, and Resumes.</li>
-            <li>Saved list views with visibility controls (Private, Team, Public, Role‑based) to avoid duplicates.</li>
-            <li>Bulk Bench Scoring on “Our Bench” or any saved view; score persisted to Candidate.</li>
-            <li>Global Preview Center with context, quick navigation, and explicit Edit navigation.</li>
-            <li>LLM‑powered Ask AI with page‑aware context and action mode.</li>
-            <li>Role‑based access control and audit logging; customizable global dashboard widgets.</li>
-          </ul>
-          <div className="text-xs">
-            Shortcuts: <Link className="text-blue-600 hover:underline" to={createPageUrl("Candidates")}>Candidates</Link> •{" "}
-            <Link className="text-blue-600 hover:underline" to={createPageUrl("Jobs")}>Jobs</Link> •{" "}
-            <Link className="text-blue-600 hover:underline" to={createPageUrl("Dashboard")}>Dashboard</Link>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Users & Roles */}
-      <Card id="users-roles">
-        <CardHeader>
-          <CardTitle>Users & Roles</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-slate-700">
-          <div>
-            <h4 className="font-semibold">Admin</h4>
-            <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li>Full access to all entities; can manage Roles, DashboardConfig, and system settings.</li>
-              <li>Can create global dashboards and shared views.</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold">Recruiter</h4>
-            <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li>View most records; create/update own; limited deletes by scope.</li>
-              <li>Can edit Candidates and update status; bulk scoring and views available per visibility.</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Functional Requirements */}
-      <div id="functional" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle>Candidate List Views</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Create views with filters, columns, sort; set default view.</li>
-              <li>Visibility: <Badge variant="secondary">Private</Badge> <Badge variant="secondary">Team</Badge> <Badge variant="secondary">Public</Badge> <Badge variant="secondary">Role‑based</Badge>.</li>
-              <li>Edit/Delete views (owner and admins only). RLS enforces visibility.</li>
-              <li>Usable across pages and inside Bulk Scoring modal.</li>
-            </ul>
-          </CardContent>
-        </Card>
-        {/* 3.1 Dashboard */}
-        <Card>
-          <CardHeader><CardTitle>3.1 Dashboard</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>KPIs and charts for pipeline at‑a‑glance; Quick Actions to add key records.</li>
-              <li>"My Tasks Today" card with inline complete (due/overdue prioritized).</li>
-              <li>Custom Global Dashboard (Admin): Builder composes a global layout (read‑only for non‑admins).</li>
-              <li>Widget types: KPI (count), Bar, Pie (group‑by), Line (time series by month), Stacked.</li>
-              <li>Data sources: Candidate, Job, Company (Connections), Application, Submission, Task.</li>
-              <li>Widget options: Title, Entity, Type, Group By, Date field (for line/stacked), Filter JSON (exact matches), Width (1–2 columns).</li>
-              <li>Drag‑and‑drop reorder with auto‑save → DashboardConfig (is_global=true, is_active=true).</li>
-              <li>Responsive grid; Refresh reloads latest numbers without full page reload.</li>
-              <li><strong>NEW: AI Pipeline Insights</strong> - On-demand comprehensive analysis with "AI Insights" button.</li>
-              <li><strong>Skill Gap Analysis:</strong> Identifies critical skill shortages and sourcing priorities.</li>
-              <li><strong>Hiring Forecast:</strong> Predicts hiring needs for next quarter, identifies hardest-to-fill roles.</li>
-              <li><strong>Pipeline Health:</strong> Overall status (healthy/at_risk/critical), bottlenecks, strengths, recommendations.</li>
-              <li><strong>Action Items:</strong> Prioritized immediate actions with expected impact analysis.</li>
-              <li><strong>Consolidated View:</strong> Merged pipeline analytics into dashboard (removed duplicate page).</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Bulk Bench Scoring</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Select cohort via Candidate View (default: status=our_bench).</li>
-              <li>Select any Job with status Draft or Open.</li>
-              <li>Skip candidates without resume; result marked as Skipped.</li>
-              <li>Persist bench_match_score (0–100) and bench_score_details (JSON) to Candidate.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Preview Center & Editing</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Right‑side global preview for Candidate, Job, Company, Application, Task, Playbook.</li>
-              <li>Explicit “Edit” actions bypass preview and navigate to full edit page.</li>
-              <li>Inline status update for Candidate within preview.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.2 Candidates */}
-        <Card>
-          <CardHeader><CardTitle>3.2 Candidates</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Search, filter, add/edit from modal (resume upload + AI parsing).</li>
-              <li>Candidate Details: Overview, Applications (with AI score), Documents, Activity.</li>
-              <li>Related panel: Applications, Submissions, Tasks, Resumes (recent items).</li>
-              <li>AI Candidate Summary panel with regenerate and Q&A.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.3 Jobs */}
-        <Card>
-          <CardHeader><CardTitle>3.3 Jobs</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>List, search, filter; view details and associated applications.</li>
-              <li>Track status, priority, location, compensation, due date.</li>
-              <li>Email Blast: select one/all jobs, auto‑summarize with AI, send to marketing recruiters and optionally selected candidates; choose Email Template; respects Email Settings gating.</li>
-              <li><strong>NEW: AI Candidate Matching</strong> - Recommended Candidates section on Job Details page.</li>
-              <li><strong>Top 5 Ranked Candidates:</strong> AI scores all active candidates (0-100 fit score).</li>
-              <li><strong>Detailed Breakdown:</strong> Matching skills (green), missing skills (red), strengths, concerns.</li>
-              <li><strong>Visual Ranking:</strong> #1-#5 badges with color-coded scores (Excellent/Good/Potential/Weak Match).</li>
-              <li><strong>AI Scoring Criteria:</strong> Skills match (required & preferred), experience alignment, location compatibility, work authorization fit, title/role relevance.</li>
-              <li><strong>Auto-Analysis:</strong> Runs automatically on Job Details page load; manual refresh available.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.4 Submissions */}
-        <Card>
-          <CardHeader><CardTitle>3.4 Submissions</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Create submission, status tracking, client feedback.</li>
-              <li>Follow‑up reminders with due indicators and quick actions.</li>
-              <li>Auto‑create next‑day follow‑up Task on submission create; status changes auto‑sync related Task status/due date.</li>
-              <li>Details modal with related candidate/job, related tasks, AI summary, and email actions.</li>
-              <li>Board/List views with saved views; drag‑and‑drop updates status.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.5 Resume Studio (Unified Build + Score) */}
-        <Card>
-          <CardHeader><CardTitle>3.5 Resume Studio (Build + Score)</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Build tab: inline editor (left), live preview (right), zoom, autoscale, save, print.</li>
-              <li>Score tab: paste/upload JD and Resume text; compare text only; JD vs Resume Comparison alongside Live Score.</li>
-              <li>AI Resume Builder panel: generate tailored JSON resume and apply to editor.</li>
-              <li>Scoring model weights: Hard Skills (highest), Education, Job Title, Soft Skills, Other Keywords; target 75–80%.</li>
-              <li>Frequency maps for skills; add missing skills inline.</li>
-              <li>Excluded from Score tab: bulk ranking and version snapshots (kept for focus).</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.6 AI Assistant (Global) */}
-        <Card>
-          <CardHeader><CardTitle>3.6 AI Assistant (Global)</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Floating launcher opens side‑panel chat on every page.</li>
-              <li>Loads scoped context (Candidates, Jobs, Applications, etc.) with counters and samples.</li>
-              <li>Quick prompts for pipeline, overdue tasks, and top matches.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.7 Access Control */}
-        <Card>
-          <CardHeader><CardTitle>3.7 Access Control</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Users list with search and role assignment.</li>
-              <li>Roles & Permissions matrix: toggle View/Create/Edit/Delete per entity; scope All/Own.</li>
-              <li>UI enforcement via PermissionGate; “own” uses created_by; server‑side RLS mirrors rules.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.8 Connections, Consultants, Tasks, Playbooks */}
-        <Card>
-          <CardHeader><CardTitle>3.8 Connections, Consultants, Tasks, Playbooks</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Connections (Companies): lists with search/filters; details modal (Overview, Contacts, Related), ESC to close.</li>
-              <li>Connections Email Blast: multi‑select companies; recipients compiled from contacts (deduped); AI‑generated draft with edit; Send via SendEmail respecting Email Settings; ESC to close.</li>
-              <li>Consultants, Tasks, Playbooks: lists with search; create/edit per permissions; Playbooks include rich details and document links.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.9 Email Settings & Sending */}
-        <Card>
-          <CardHeader><CardTitle>3.9 Email Settings & Sending</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Email sending gated by Email Settings: provider Gmail/Outlook and connected.</li>
-              <li>All email features disabled until connected; From uses current user where supported.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* 3.10 Accounts */}
-        <Card>
-          <CardHeader><CardTitle>3.10 Accounts (Invoices & Expenses)</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Invoices: create/edit items, tax, totals; email to contacts; statuses (draft, sent, paid, overdue, void).</li>
-              <li>Invoices summary shows Pending and Received totals.</li>
-              <li>Expenses: track categories, date, amount, location, vendor, notes; CSV import planned via backend functions.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>3.11 My Work (Enhanced)</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li><strong>NEW: Tab-Based Navigation</strong> - Overview, Quick Entry, Weekly Submit, Leave Requests.</li>
-              <li><strong>Quick Stats Cards:</strong> Hours this week, approved hours (month), pending leave, draft entries.</li>
-              <li><strong>Quick Time Entry:</strong> Single-form entry for date, hours, job, notes; saves as draft.</li>
-              <li><strong>Draft Management:</strong> Real-time tracking of draft timesheets before submission.</li>
-              <li><strong>Leave Validation:</strong> Automatically blocks time entry on leave dates.</li>
-              <li><strong>Overview Tab:</strong> Recent timesheets (last 5) and leave requests preview with quick-add buttons.</li>
-              <li><strong>Weekly Submit Tab:</strong> Range-based timesheet submission with calendar picker.</li>
-              <li><strong>Leave Tab:</strong> Apply for leave and view request history (last 12 months).</li>
-              <li><strong>Auto-Notifications:</strong> Admins notified on submissions; users notified on approval/rejection.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>3.12 Approvals (Enhanced with AI)</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li><strong>Quick Stats Dashboard:</strong> Pending leaves, pending timesheets, pending hours, users waiting.</li>
-              <li><strong>Batch Operations:</strong> "Approve All" for leaves and timesheets; individual actions (approve/reject/revision).</li>
-              <li><strong>Weekly Grouping:</strong> Timesheets grouped by user + week for efficient approval.</li>
-              <li><strong>NEW: AI Insights Button</strong> - Comprehensive approval analytics on-demand.</li>
-              <li><strong>Workload Analysis:</strong> Overall assessment (healthy/overworked/underutilized/concerning) with concerns and recommendations.</li>
-              <li><strong>Productivity Score:</strong> 0-100 score with strengths and areas for improvement.</li>
-              <li><strong>Leave Patterns:</strong> Trend analysis, unusual pattern detection, staffing concerns, policy recommendations.</li>
-              <li><strong>Approval Efficiency:</strong> Efficiency score (0-100), red flags identification, process improvements, bottleneck detection.</li>
-              <li><strong>Action Items:</strong> Prioritized recommendations (high/medium/low) with expected impact.</li>
-              <li><strong>Pattern Recognition:</strong> Identifies busiest days, most common work hours, flags anomalies.</li>
-              <li><strong>Email Notifications:</strong> Auto-sends emails to users on all approval decisions.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>3.13 Interview Assistant (Enhanced)</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li><strong>NEW: Question Library</strong> - Pre-built questions across 5 categories (technical, behavioral, situational, culture_fit, experience).</li>
-              <li><strong>One-Click Category Addition:</strong> Add entire question sets (5+ questions per category) instantly.</li>
-              <li><strong>Per-Question Rating:</strong> 1-5 scale slider for each question with real-time scoring.</li>
-              <li><strong>NEW: Live Score Calculator</strong> - Auto-calculates as you rate:</li>
-              <li>  • Overall score (0-100 scale)</li>
-              <li>  • Average rating (1-5 scale)</li>
-              <li>  • Completion percentage</li>
-              <li>  • Category breakdown (e.g., Technical: 4.2/5, Behavioral: 3.8/5)</li>
-              <li><strong>AI Summary Integration:</strong> Uses calculated scores in final analysis and recommendations.</li>
-              <li><strong>Custom Questions:</strong> Add custom questions anytime with same rating system.</li>
-              <li><strong>Interview Types:</strong> Phone screen, technical, behavioral, culture fit, panel, final round.</li>
-              <li><strong>Good Answer Indicators:</strong> AI-suggested indicators for each question to guide evaluation.</li>
-              <li><strong>Session Management:</strong> Save sessions with candidate, job, date, interviewer, status.</li>
-              <li><strong>AI Analysis:</strong> Generates comprehensive summary with strengths, concerns, technical assessment, cultural fit, hiring recommendation, next steps.</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Email ingest functionality has been removed. */}
-
-        <Card>
-          <CardHeader><CardTitle>Ask AI (Global Assistant)</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-slate-700">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Page‑aware context and quick prompts.</li>
-              <li>Action Mode translates commands to Entity SDK calls with permission checks.</li>
-            </ul>
-          </CardContent>
-        </Card>
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 border-b">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "overview"
+              ? "border-b-2 border-blue-600 text-blue-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <FileText className="w-4 h-4 inline mr-2" />
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab("datamodel")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "datamodel"
+              ? "border-b-2 border-blue-600 text-blue-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Database className="w-4 h-4 inline mr-2" />
+          Data Model
+        </button>
+        <button
+          onClick={() => setActiveTab("relationships")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "relationships"
+              ? "border-b-2 border-blue-600 text-blue-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <GitBranch className="w-4 h-4 inline mr-2" />
+          Relationships
+        </button>
       </div>
 
-      {/* Profile Resolver & Matching Engine */}
-      <Card id="resolver">
-        <CardHeader>
-          <CardTitle>BRD: Profile Resolver & Matching Engine — Version 1.0</CardTitle>
-          <div className="text-xs text-slate-500">Date: October 26, 2023</div>
-        </CardHeader>
-        <CardContent className="space-y-4 text-slate-700">
-          <div>
-            <h4 className="font-semibold">Executive Summary</h4>
-            <p className="text-sm">A centralized, AI‑powered search and aggregation feature that resolves fragmented data into a unified “Master Profile”, consolidating Candidates, Recruiters, and Companies with their relationships for a 360° view.</p>
-          </div>
-          <div>
-            <h4 className="font-semibold">Business Problem & Opportunity</h4>
-            <ul className="list-disc pl-5 text-sm space-y-1">
-              <li>Data is fragmented across entities; manual cross‑referencing is slow and error‑prone.</li>
-              <li>An intelligent resolver provides instant, actionable insights and a single source of truth.</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold">Goals & Objectives</h4>
-            <ul className="list-disc pl-5 text-sm space-y-1">
-              <li>Reduce time to assemble a complete profile by 70%+.</li>
-              <li>Provide unified search with aggregation and relationship mapping.</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold">Scope</h4>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
+      {/* Overview Tab */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          {sections.map((section, idx) => {
+            const Icon = section.icon;
+            return (
+              <Card key={idx}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Icon className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle>{section.title}</CardTitle>
+                      <p className="text-sm text-slate-600 mt-1">{section.description}</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>{section.content}</CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Data Model Tab */}
+      {activeTab === "datamodel" && (
+        <div className="space-y-6">
+          {/* Search */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Search entities, fields, descriptions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Entity Groups */}
+          {entityGroups.map((group) => {
+            const displayEntities = searchQuery
+              ? group.entities.filter(e => filteredEntities.includes(e))
+              : group.entities;
+
+            if (displayEntities.length === 0) return null;
+
+            return (
+              <div key={group.key} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Badge className={`bg-${group.color}-100 text-${group.color}-800`}>
+                    {group.label}
+                  </Badge>
+                  <span className="text-sm text-slate-600">
+                    {displayEntities.length} {displayEntities.length === 1 ? 'entity' : 'entities'}
+                  </span>
+                </div>
+
+                {displayEntities.map((entity) => (
+                  <EntityCard
+                    key={entity.name}
+                    entity={entity}
+                    expanded={expandedEntities[entity.name]}
+                    onToggle={() => toggleEntity(entity.name)}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Relationships Tab */}
+      {activeTab === "relationships" && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Key Entity Relationships</CardTitle>
+              <p className="text-sm text-slate-600 mt-2">
+                Understanding how entities connect to enable comprehensive talent management workflows
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Core Recruitment Flow */}
               <div>
-                <p className="font-medium">In‑Scope</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Unified search; parse Name/Email/Company/LinkedIn.</li>
-                  <li>Parallel internal searches; aggregation into Master Profiles.</li>
-                  <li>Relationship visualization (e.g., applications, jobs, contacts).</li>
-                </ul>
+                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                  <GitBranch className="w-5 h-5 text-blue-600" />
+                  Core Recruitment Flow
+                </h4>
+                <div className="bg-slate-50 rounded-lg p-6 space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-blue-100 text-blue-800">Company</Badge>
+                    <span className="text-slate-600">→ has many →</span>
+                    <Badge className="bg-purple-100 text-purple-800">Jobs</Badge>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
+                    <span className="text-slate-600">→ applies to →</span>
+                    <Badge className="bg-purple-100 text-purple-800">Jobs</Badge>
+                    <span className="text-slate-600">→ creates →</span>
+                    <Badge className="bg-green-100 text-green-800">Application</Badge>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-orange-100 text-orange-800">Recruiter</Badge>
+                    <span className="text-slate-600">→ submits →</span>
+                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
+                    <span className="text-slate-600">→ to →</span>
+                    <Badge className="bg-purple-100 text-purple-800">Job</Badge>
+                    <span className="text-slate-600">→ creates →</span>
+                    <Badge className="bg-green-100 text-green-800">Submission</Badge>
+                  </div>
+                </div>
               </div>
+
+              {/* AI Matching System */}
               <div>
-                <p className="font-medium">Out‑of‑Scope</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Real‑time external scraping; direct editing of external sources.</li>
-                  <li>User workflow automation (handled elsewhere).</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-semibold">Functional Requirements</h4>
-            <ul className="list-disc pl-5 text-sm space-y-1">
-              <li>FR‑001: Unified search bar in main layout.</li>
-              <li>FR‑002: Parse identifiers (email, LinkedIn, name + company).</li>
-              <li>FR‑003: Parallel searches across Candidate, Recruiter, Company.</li>
-              <li>FR‑004: Aggregate and deduplicate into Master Profiles with source tracking.</li>
-              <li>FR‑005: Show relationships (applications, submissions, jobs).</li>
-              <li>FR‑006: Provide contextual actions (e.g., find similar candidates).</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold">Pseudocode: The Power Engine Logic</h4>
-            <pre className="text-xs bg-slate-50 p-3 rounded overflow-auto">
-{`function resolveProfile(query) {
-  // 1. Parse & Enrich Query
-  const parsedQuery = parseQueryForIdentifiers(query); // { email, linkedinUrl, name, company }
-
-  // 2. Parallel Internal Searches
-  const [candidateResults, recruiterResults, companyResults] = await Promise.all([
-    Candidate.search(parsedQuery),
-    Recruiter.search(parsedQuery),
-    Company.search(parsedQuery.company || parsedQuery.name),
-  ]);
-
-  // 3. Aggregate & Deduplicate
-  const masterProfiles = new Map();
-  const processResults = (results, entity) => {
-    for (const record of results) {
-      const key = generateProfileKey(record.email, record.name, record.linkedin_url);
-      if (!masterProfiles.has(key)) masterProfiles.set(key, { sources: [], relationships: [] });
-      const profile = masterProfiles.get(key);
-      mergeData(profile, record, entity);
-      profile.sources.push({ entity, id: record.id });
-    }
-  };
-  processResults(candidateResults, "Candidate");
-  processResults(recruiterResults, "Recruiter");
-  processResults(companyResults, "Company");
-
-  // 4. Map Relationships
-  for (const profile of masterProfiles.values()) {
-    const cand = profile.sources.find(s => s.entity === "Candidate");
-    if (cand) {
-      const applications = await Application.filter({ candidate_id: cand.id });
-      profile.relationships.push({ type: "APPLIED_TO", records: applications });
-    }
-  }
-
-  // 5. Return Profiles
-  return Array.from(masterProfiles.values());
-}`}
-            </pre>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Data Model Quick Reference (in addition to live schemas) */}
-      <Card>
-        <CardHeader><CardTitle>Data Model Quick Reference</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>User: role_id, status, is_locked, last_active, seat.</li>
-              <li>Role: name, permissions map {`{view, create, update, delete, scope}`}; cached for performance.</li>
-              <li>Company: name, industry, website, location, type, status, contacts[].</li>
-              <li>Candidate: name, email, phone, location, title, company, skills[], experience_years, availability, status, work_authorization, notes, tags[], bench_match_score, bench_score_details.</li>
-              <li>Job: title, company_id, description, requirements, location, remote_type, employment_type, priority, status, required_skills[], due_date, salary_text, visa_restrictions.</li>
-              <li>Application: candidate_id, job_id, status, interview_dates[], match_score, score_details, notes.</li>
-              <li>Submission: candidate_id, job_id, recruiter_id, status, submitted_date, follow_up_date/completed, client_feedback, notes, interview_dates[].</li>
-            </ul>
-          </div>
-          <div>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Task: title, description, assigned_to, related_entity, related_id, priority, status, due_date, tags[].</li>
-              <li>Resume: candidate_id, summary, experiences[], education[], projects[], skills[], theme_color.</li>
-              <li>EmailTemplate: title, subject, blocks/html_body, category, tags, is_active.</li>
-              <li>Views: CandidateView/SubmissionView/TaskView with view_type, columns, filters, sort, visibility, is_default.</li>
-              <li>AppSettings: email_provider, provider_connected, from_name, notes.</li>
-              <li>DashboardConfig: is_global, is_active, widgets[] (entity, widget_type, group_by, date_field, filter, cols).</li>
-              <li>Invoices/Expenses: invoicing fields, items[], totals; expense date, type, amount, vendor, notes.</li>
-            </ul>
-          </div>
-          <div className="lg:col-span-2 text-xs text-slate-500">Note: See “Data Model (Live Schemas)” below for the authoritative schema pulled at runtime.</div>
-        </CardContent>
-      </Card>
-
-      {/* Non‑Functional Requirements */}
-      <Card id="nonfunctional">
-        <CardHeader><CardTitle>Non‑Functional Requirements</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Responsive UI for desktop and mobile.</li>
-            <li>Security via role‑based permissions; platform authentication.</li>
-            <li>Performance optimizations (throttled loaders, caching of roles, limited AI context windows).</li>
-            <li>Reliability: allow errors to bubble for fast fixes during development.</li>
-            <li>Branding: consistent gradient header and background per Layout.</li>
-            <li>Email safety: Sends gated by Email Settings (provider connected).</li>
-            <li>UX: ESC closes major modals; consistent focus states and keyboard support.</li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Data Model Overview with Live Schemas */}
-      <Card id="data-model">
-        <CardHeader><CardTitle>Data Model Overview</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700 space-y-3">
-          <p>Key entities and relationships include Candidates, Jobs, Companies (Connections), Submissions, Applications, Tasks, Resumes, Roles, Users, DashboardConfig, Email settings, and Accounts (Invoices/Expenses). Live JSON schemas are rendered below.</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Data Model (Live Schemas)</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <Accordion type="multiple" className="w-full">
-            <AccordionItem value="entities-core">
-              <AccordionTrigger>Core Entities</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <SchemaViewer title="Candidate" entity={Candidate} />
-                  <SchemaViewer title="Company" entity={Company} />
-                  <SchemaViewer title="Job" entity={Job} />
-                  <SchemaViewer title="Submission" entity={Submission} />
-                  <SchemaViewer title="Application" entity={Application} />
-                  <SchemaViewer title="Task" entity={Task} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="entities-views">
-              <AccordionTrigger>Views & Config</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <SchemaViewer title="CandidateView" entity={CandidateView} />
-                  <SchemaViewer title="SubmissionView" entity={SubmissionView} />
-                  <SchemaViewer title="TaskView" entity={TaskView} />
-                </div>
-                <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <SchemaViewer title="DashboardConfig" entity={DashboardConfig} />
-                  <SchemaViewer title="EmailTemplate" entity={EmailTemplate} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="entities-integrations">
-              <AccordionTrigger>Integrations</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <SchemaViewer title="AppSettings" entity={AppSettings} />
-                  <SchemaViewer title="InboundEmail" entity={InboundEmail} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="entities-ops">
-              <AccordionTrigger>Operations & Finance</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <SchemaViewer title="Invoice" entity={Invoice} />
-                  <SchemaViewer title="Expense" entity={Expense} />
-                  <SchemaViewer title="JobStack" entity={JobStack} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="entities-security">
-              <AccordionTrigger>Security & System</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <SchemaViewer title="Role" entity={Role} />
-                  <SchemaViewer title="User (extended)" entity={UserEntity} />
-                  <SchemaViewer title="AuditLog" entity={AuditLog} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="entities-content">
-              <AccordionTrigger>Content & Resume</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <SchemaViewer title="Resume" entity={Resume} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-          <div className="text-xs text-slate-500 mt-3">Note: All records include built‑in attributes: id, created_date, updated_date, created_by.</div>
-        </CardContent>
-      </Card>
-
-      {/* Role/Permissions Matrix */}
-      <Card id="permissions">
-        <CardHeader><CardTitle>Role/Permissions Matrix (Summary)</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700">
-          <ul className="list-disc pl-5 space-y-1">
-            <li><b>Admin:</b> View/Create/Update/Delete for all entities (scope: All). Access to Access Control, global dashboard, and shared views.</li>
-            <li><b>Recruiter:</b> View most; Create/Update own by RLS; can edit Candidates and update status; limited deletes; dashboard read‑only.</li>
-            <li>Client‑side: PermissionGate and listFilterFor enforce capabilities and scope; server‑side: entity RLS mirrors the rules.</li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Integrations */}
-      <Card id="integrations">
-        <CardHeader><CardTitle>Integrations</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700 space-y-3">
-          <ul className="list-disc pl-5 space-y-1">
-            <li><b>Core.InvokeLLM</b> — summaries, Ask AI, resume and bench scoring with strict JSON responses.</li>
-            <li><b>Core.UploadFile</b> — resume/JD uploads; <b>Core.ExtractDataFromUploadedFile</b> for OCR/text extraction.</li>
-            <li><b>Core.SendEmail</b> — submission emails and email blasts; gated by AppSettings (provider connected).</li>
-          </ul>
-          {/* Inbound email ingestion removed from this app. */}
-        </CardContent>
-      </Card>
-
-      {/* Acceptance Criteria */}
-      <Card id="acceptance">
-        <CardHeader><CardTitle>Acceptance Criteria</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700 space-y-1">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Users can create, edit, delete, and select views; visibility and RLS enforced.</li>
-            <li>Bulk scoring uses selected view; supports Draft/Open jobs; skips no‑resume; persists scores to Candidate.</li>
-            <li>Preview "Edit" navigates to full edit; candidate status editable inline.</li>
-            <li>Recruiter role can update Candidates; audit logs capture logins and key actions.</li>
-            <li>Dashboard builder (admin) publishes global widgets; non‑admins see read‑only layout.</li>
-            <li>Email features disabled until Gmail/Outlook is marked connected in Email Settings.</li>
-            <li><strong>NEW: AI candidate-job matching displays top 5 ranked candidates on Job Details page with fit scores and detailed breakdowns.</strong></li>
-            <li><strong>NEW: Interview assistant includes question library, per-question rating (1-5), and live score calculation (overall, avg, completion %, category breakdown).</strong></li>
-            <li><strong>NEW: Dashboard AI Insights button provides on-demand pipeline analysis (skill gaps, hiring forecast, pipeline health, action items).</strong></li>
-            <li><strong>NEW: My Work tab features quick time entry, draft management, tab-based navigation, and leave validation.</strong></li>
-            <li><strong>NEW: Approvals tab includes AI insights (workload analysis, productivity score, leave patterns, approval efficiency, action items).</strong></li>
-            <li><strong>NEW: "Paste to Add Candidate" successfully extracts and creates candidate records from unstructured text using AI.</strong></li>
-            <li><strong>NEW: AI Quick Actions (⌘J) provides conversational interface for navigation, entity creation, and information retrieval, including candidate parsing from pasted text.</strong></li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Future Enhancements */}
-      <Card id="future">
-        <CardHeader><CardTitle>Future Enhancements</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Advanced semantic matching models and similarity search.</li>
-            <li>Analytics for pipeline conversion and AI score impact.</li>
-            <li>Version history for resumes, views, and configurations.</li>
-            <li><strong>NEW: Enhanced interview features - video recording integration, automated transcription, sentiment analysis.</strong></li>
-            <li><strong>NEW: Predictive analytics - candidate success prediction, time-to-fill forecasting, offer acceptance probability.</strong></li>
-            <li><strong>NEW: Advanced automation - auto-scheduling interviews, smart candidate nurturing campaigns, intelligent task assignment.</strong></li>
-            <li><strong>NEW: AI-driven follow-up suggestions for submissions and tasks.</strong></li>
-            <li><strong>NEW: Global search with AI-powered semantic search and fuzzy matching.</strong></li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Glossary */}
-      <Card id="glossary">
-        <CardHeader><CardTitle>Glossary</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700">
-          <ul className="list-disc pl-5 space-y-1">
-            <li><b>Match Score</b>: Weighted alignment between resume and JD.</li>
-            <li><b>Fit Score</b>: AI-calculated 0-100 score indicating candidate-job compatibility based on multiple criteria.</li>
-            <li><b>Scope (All/Own)</b>: Whether a role acts on all records or only those they created.</li>
-            <li><b>LLM</b>: Large Language Model used for summaries and insights.</li>
-            <li><b>Live Score Calculator</b>: Real-time interview scoring system that updates as questions are answered and rated.</li>
-            <li><b>Pipeline Health</b>: AI-assessed overall state of recruitment pipeline (healthy/at_risk/critical).</li>
-            <li><b>Workload Analysis</b>: AI evaluation of team work hours and utilization patterns.</li>
-            <li><b>AI Quick Actions</b>: Conversational AI assistant accessible via ⌘J or floating button for executing actions and answering questions.</li>
-            <li><b>Paste to Add</b>: Feature to quickly create candidate records by pasting unstructured text, which AI then parses into structured fields.</li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* UI / Branding */}
-      <Card id="branding">
-        <CardHeader><CardTitle>UI/Branding Update Overview</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Modern ATS styling with rounded cards, subtle shadows, and refined gradients.</li>
-            <li>Global gradient header and clay‑surface background per Layout; consistent focus/hover states.</li>
-            <li>Navigation includes Email Settings; sidebar supports pin/collapse and mobile drawer.</li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* UPDATED: Recent Updates Section */}
-      <Card id="recent-updates">
-        <CardHeader><CardTitle>Recent Updates & New Features</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold mb-2">Version 2.1 - AI Quick Actions & Paste to Add (Current)</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Paste to Add Candidate:</strong> New feature allowing users to paste resume text, bio, or candidate information and have AI automatically extract and create candidate records with intelligent field parsing.</li>
-                <li><strong>AI Quick Actions Chat Agent:</strong> Enhanced Quick Actions button (⌘J) now opens an AI-powered conversational interface that can:</li>
-                <li className="ml-8">• Parse and add candidates from pasted text</li>
-                <li className="ml-8">• Navigate to any section (Add Candidate, Create Job, etc.)</li>
-                <li className="ml-8">• Answer questions about recruitment workflows</li>
-                <li className="ml-8">• Execute actions through natural language commands</li>
-                <li className="ml-8">• Provide contextual suggestions and quick action buttons</li>
-                <li><strong>Keyboard Shortcut Enhancement:</strong> ⌘J or Ctrl+J now opens AI Quick Actions globally from any page.</li>
-                <li><strong>Smart Entity Creation:</strong> AI can intelligently parse unstructured text to create candidates with proper field mapping (name, email, phone, skills, experience, etc.).</li>
-                <li><strong>Conversational UI:</strong> Modern chat interface with suggested actions, message history, and smooth animations.</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-2">Version 2.0 - AI & UX Enhancements</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>AI Candidate-Job Matching:</strong> Automatic top 5 candidate recommendations on Job Details page with detailed fit analysis.</li>
-                <li><strong>Enhanced Interview Workflow:</strong> Question library, per-question rating, live score calculator with category breakdown.</li>
-                <li><strong>Dashboard AI Insights:</strong> Merged pipeline analytics into dashboard with on-demand comprehensive analysis.</li>
-                <li><strong>My Work Tab Redesign:</strong> Tab-based navigation, quick time entry, draft management, improved UX.</li>
-                <li><strong>Approvals AI Insights:</strong> Workload analysis, productivity scoring, leave patterns, approval efficiency, action items.</li>
-                <li><strong>Email Outreach Improvements:</strong> Graceful error handling, draft saving, better notifications.</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-2">Performance Optimizations</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Removed duplicate "Pipeline Analytics" page for streamlined navigation.</li>
-                <li>Enhanced role caching (15-minute TTL) for reduced API calls.</li>
-                <li>Improved data loading guards across dashboard and approval pages.</li>
-                <li>Optimized AI context windows for faster response times.</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* NEW: AI Quick Actions Feature Details */}
-      <Card id="ai-quick-actions">
-        <CardHeader><CardTitle>AI Quick Actions - Detailed Specification</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold mb-2">Overview</h4>
-              <p>AI Quick Actions transforms the traditional quick action button into an intelligent conversational assistant that understands natural language and can perform complex operations through simple chat interactions.</p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-2">Key Capabilities</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Natural Language Understanding:</strong> Processes user requests in conversational language and determines intent.</li>
-                <li><strong>Context-Aware Actions:</strong> Understands current user role and permissions to provide relevant suggestions.</li>
-                <li><strong>Multi-Intent Support:</strong> Handles various request types:</li>
-                <li className="ml-8">• Navigation requests ("show me candidates", "go to jobs page")</li>
-                <li className="ml-8">• Entity creation ("add a candidate named John Doe")</li>
-                <li className="ml-8">• Information queries ("how do I create a new job?")</li>
-                <li className="ml-8">• Bulk text parsing ("paste candidate: John Doe, Software Engineer...")</li>
-                <li><strong>Intelligent Data Extraction:</strong> When pasting candidate information, AI extracts:</li>
-                <li className="ml-8">• Contact details (name, email, phone)</li>
-                <li className="ml-8">• Professional info (current title, company, years of experience)</li>
-                <li className="ml-8">• Technical skills (programming languages, frameworks, tools)</li>
-                <li className="ml-8">• Location and work authorization</li>
-                <li className="ml-8">• Professional summary</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">Technical Implementation</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>LLM Integration:</strong> Uses Core.InvokeLLM with structured JSON schema for reliable responses.</li>
-                <li><strong>Action Types:</strong> navigate, create_candidate, create_job, create_company, create_task, search, none.</li>
-                <li><strong>State Management:</strong> Maintains conversation history for context.</li>
-                <li><strong>Error Handling:</strong> Graceful fallback responses when AI processing fails.</li>
-                <li><strong>Permissions Check:</strong> Validates user permissions before executing actions.</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">User Experience Flow</h4>
-              <ol className="list-decimal pl-5 space-y-1">
-                <li>User clicks floating AI button (bottom-right) or presses ⌘J / Ctrl+J</li>
-                <li>Chat modal opens with welcome message and suggested quick actions</li>
-                <li>User types request or pastes candidate information</li>
-                <li>AI processes request, showing "Thinking..." indicator</li>
-                <li>AI responds with conversational message</li>
-                <li>If actionable, AI executes operation (navigate, create entity, etc.)</li>
-                <li>Success notification confirms completion</li>
-                <li>User can continue conversation or close modal</li>
-              </ol>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">Example Interactions</h4>
-              <div className="space-y-3">
-                <div className="p-3 bg-slate-50 rounded">
-                  <p className="font-medium">User: "Add a candidate named John Doe"</p>
-                  <p className="text-slate-600 text-xs mt-1">AI: "I'll help you add a new candidate. Opening the Candidates page with the add form..."</p>
-                  <p className="text-xs text-blue-600 mt-1">→ Navigates to Candidates page and triggers add form</p>
-                </div>
-                
-                <div className="p-3 bg-slate-50 rounded">
-                  <p className="font-medium">User: "Manikishore Dasari, is a highly skilled Senior Java/J2EE Full Stack Developer with over 11+ years..."</p>
-                  <p className="text-slate-600 text-xs mt-1">AI: "I've extracted the candidate information! Creating a new candidate record for Manikishore Dasari with 11 years of experience..."</p>
-                  <p className="text-xs text-blue-600 mt-1">→ Creates candidate with parsed data and notifies success</p>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded">
-                  <p className="font-medium">User: "How do I create a new job posting?"</p>
-                  <p className="text-slate-600 text-xs mt-1">AI: "To create a new job posting: 1. Go to the Jobs page, 2. Click 'Add Job' button, 3. Fill in the job details including title, company, requirements..."</p>
-                  <p className="text-xs text-blue-600 mt-1">→ Provides helpful information without taking action</p>
+                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-pink-600" />
+                  AI Matching System
+                </h4>
+                <div className="bg-slate-50 rounded-lg p-6 space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-pink-100 text-pink-800">MatchingProfile</Badge>
+                    <span className="text-slate-600">→ defines weights for →</span>
+                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
+                    <span className="text-slate-600">+</span>
+                    <Badge className="bg-purple-100 text-purple-800">Job</Badge>
+                    <span className="text-slate-600">matching</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-pink-100 text-pink-800">MatchFeedback</Badge>
+                    <span className="text-slate-600">→ trains →</span>
+                    <Badge className="bg-pink-100 text-pink-800">MatchingProfile</Badge>
+                    <span className="text-slate-600">with user ratings</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* NEW: Paste to Add Feature Details */}
-      <Card id="paste-to-add">
-        <CardHeader><CardTitle>Paste to Add Candidate - Detailed Specification</CardTitle></CardHeader>
-        <CardContent className="text-sm text-slate-700">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold mb-2">Overview</h4>
-              <p>Paste to Add provides a dedicated interface for quickly adding candidates by pasting resume text, LinkedIn profiles, or any candidate information. AI automatically extracts structured data eliminating manual form filling.</p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-2">Access Points</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Candidates Page:</strong> New "Paste to Add" button in the header toolbar (purple gradient styling).</li>
-                <li><strong>AI Quick Actions:</strong> Can also trigger through conversational commands.</li>
-                <li><strong>Keyboard Shortcut:</strong> Available through suggested actions in AI Quick Actions modal.</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">Data Extraction Intelligence</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Contact Information:</strong></li>
-                <li className="ml-8">• Extracts first_name and last_name from beginning of text</li>
-                <li className="ml-8">• Identifies email addresses using pattern matching</li>
-                <li className="ml-8">• Finds phone numbers in various formats</li>
-                <li><strong>Professional Details:</strong></li>
-                <li className="ml-8">• Current title and company from context</li>
-                <li className="ml-8">• Years of experience from mentions like "11+ years", "5 years of experience"</li>
-                <li className="ml-8">• Location from city/state mentions</li>
-                <li><strong>Technical Skills:</strong></li>
-                <li className="ml-8">• Identifies programming languages, frameworks, tools</li>
-                <li className="ml-8">• Creates skills array automatically</li>
-                <li className="ml-8">• Recognizes technology stacks and versions</li>
-                <li><strong>Work Authorization:</strong></li>
-                <li className="ml-8">• Detects mentions of H1B, Green Card, US Citizen, etc.</li>
-                <li className="ml-8">• Maps to work_authorization enum values</li>
-                <li><strong>Summary:</strong></li>
-                <li className="ml-8">• Extracts professional summary or bio</li>
-                <li className="ml-8">• Original pasted text stored in notes field</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">User Interface Features</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Large Text Area:</strong> 300px minimum height for pasting long resumes.</li>
-                <li><strong>Clipboard Button:</strong> One-click paste from system clipboard.</li>
-                <li><strong>Character Counter:</strong> Shows how much text has been entered.</li>
-                <li><strong>Example Text:</strong> Helpful example showing what to paste.</li>
-                <li><strong>Extraction Preview:</strong> Shows what AI will extract before processing.</li>
-                <li><strong>Parse & Add Button:</strong> Gradient purple-to-blue styling with Sparkles icon.</li>
-                <li><strong>Loading States:</strong> Shows "Parsing with AI..." while processing.</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">Example Input (from requirement)</h4>
-              <div className="p-3 bg-slate-50 rounded text-xs font-mono overflow-auto">
-{`Manikishore Dasari, is a highly skilled Senior Java/J2EE 
-Full Stack Developer with over 11+ years of experience...
-
-Core Expertise Includes:
-Full Stack Development using Java, J2EE, Spring Boot, 
-Hibernate, Microservices, RESTful APIs
-
-Front-end expertise with Angular (4–14), ReactJS, 
-JavaScript, TypeScript, HTML5, CSS3, and Bootstrap
-
-Cloud Platforms: AWS (EC2, S3, Lambda, CloudWatch, IAM), 
-Azure, and PCF (Pivotal Cloud Foundry)
-
-📧 Email: manidasari104@gmail.com
-📞 Phone: 469-722-1749`}
+              {/* Communication & Workflow */}
+              <div>
+                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-green-600" />
+                  Communication & Workflow
+                </h4>
+                <div className="bg-slate-50 rounded-lg p-6 space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
+                    <span className="text-slate-600">← receives ←</span>
+                    <Badge className="bg-cyan-100 text-cyan-800">OutreachMessage</Badge>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-green-100 text-green-800">Task</Badge>
+                    <span className="text-slate-600">→ can link to →</span>
+                    <span className="text-slate-600">[Candidate | Job | Company | Submission]</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-cyan-100 text-cyan-800">InterviewSession</Badge>
+                    <span className="text-slate-600">→ connects →</span>
+                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
+                    <span className="text-slate-600">+</span>
+                    <Badge className="bg-purple-100 text-purple-800">Job</Badge>
+                  </div>
+                </div>
               </div>
-              <div className="mt-2 p-3 bg-green-50 rounded text-xs">
-                <p className="font-semibold mb-1">Extracted Result:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>first_name: "Manikishore"</li>
-                  <li>last_name: "Dasari"</li>
-                  <li>email: "manidasari104@gmail.com"</li>
-                  <li>phone: "469-722-1749"</li>
-                  <li>current_title: "Senior Java/J2EE Full Stack Developer"</li>
-                  <li>experience_years: 11</li>
-                  <li>skills: ["Java", "J2EE", "Spring Boot", "Hibernate", "Microservices", "RESTful APIs", "Angular", "ReactJS", "AWS", "Azure", ...]</li>
-                  <li>status: "active"</li>
-                  <li>source: "Pasted Text"</li>
-                  <li>notes: [Original pasted text stored for reference]</li>
-                </ul>
+
+              {/* Admin & Security */}
+              <div>
+                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-orange-600" />
+                  Admin & Security
+                </h4>
+                <div className="bg-slate-50 rounded-lg p-6 space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-orange-100 text-orange-800">User</Badge>
+                    <span className="text-slate-600">→ has one →</span>
+                    <Badge className="bg-orange-100 text-orange-800">Role</Badge>
+                    <span className="text-slate-600">→ defines permissions</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Badge className="bg-cyan-100 text-cyan-800">EmailTemplate</Badge>
+                    <span className="text-slate-600">→ used by →</span>
+                    <Badge className="bg-green-100 text-green-800">AutomationRule</Badge>
+                  </div>
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div>
-              <h4 className="font-semibold mb-2">Validation & Error Handling</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Required Fields:</strong> Ensures first_name and last_name are extracted (AI required fields).</li>
-                <li><strong>Empty Text Check:</strong> Prevents submission with no content.</li>
-                <li><strong>Parse Failure:</strong> Shows friendly error message if AI cannot extract data.</li>
-                <li><strong>Duplicate Detection:</strong> Could be enhanced in future to check for existing candidates.</li>
-                <li><strong>Success Notification:</strong> Confirms candidate added with name.</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">Integration Points</h4>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Candidates Page:</strong> Button in header toolbar opens PasteToAddCandidate modal.</li>
-                <li><strong>Entity Refresh:</strong> Triggers candidate list reload and emits entity changed event.</li>
-                <li><strong>Permissions:</strong> Wrapped in PermissionGate for "Candidate" create action.</li>
-                <li><strong>Modal Management:</strong> State controlled by showPasteToAdd in Candidates page.</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Built-in Fields Notice */}
+          <Card className="border-l-4 border-l-blue-500">
+            <CardContent className="p-6">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Database className="w-5 h-5 text-blue-600" />
+                Built-in System Fields
+              </h4>
+              <p className="text-sm text-slate-600 mb-3">
+                Every entity automatically includes these system-managed fields:
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-slate-50 rounded p-3">
+                  <div className="font-mono text-xs font-semibold mb-1">id</div>
+                  <div className="text-xs text-slate-600">Unique identifier (UUID)</div>
+                </div>
+                <div className="bg-slate-50 rounded p-3">
+                  <div className="font-mono text-xs font-semibold mb-1">created_date</div>
+                  <div className="text-xs text-slate-600">Creation timestamp (ISO 8601)</div>
+                </div>
+                <div className="bg-slate-50 rounded p-3">
+                  <div className="font-mono text-xs font-semibold mb-1">updated_date</div>
+                  <div className="text-xs text-slate-600">Last update timestamp</div>
+                </div>
+                <div className="bg-slate-50 rounded p-3">
+                  <div className="font-mono text-xs font-semibold mb-1">created_by</div>
+                  <div className="text-xs text-slate-600">Creator user email</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
