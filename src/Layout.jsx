@@ -833,7 +833,7 @@ export default function Layout({ children, currentPageName }) {
               <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"} gap-3`}>
                 <div className="flex items-center gap-3">
                   <img
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/291ea5029_TalentStackCorporateImages-1.png"
+                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b3b1fb7f6f404f0a2709aa/0f7c64ed2_IMG_8954.jpg"
                     alt="Talent Stack"
                     className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200"
                   />
