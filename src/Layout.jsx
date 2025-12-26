@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom"; // Added useNavigate
 import { createPageUrl } from "@/utils";
@@ -1180,7 +1179,7 @@ export default function Layout({ children, currentPageName }) {
               <div className="relative min-h-full">
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
                   <img
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/291ea5029_TalentStackCorporateImages-1.png"
+                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b3b1fb7f6f404f0a2709aa/fcbc8527f_IMG_8954.jpg"
                     alt="Talent Stack background logo"
                     className="w-[520px] max-w-[70vw] opacity-[0.05]"
                   />

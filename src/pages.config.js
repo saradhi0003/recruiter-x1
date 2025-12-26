@@ -38,7 +38,7 @@ import DuplicateManager from './pages/DuplicateManager';
 import Landing from './pages/Landing';
 import EmailBlast from './pages/EmailBlast';
 import AIAgents from './pages/AIAgents';
-import Layout from './Layout.jsx';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -87,5 +87,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "Dashboard",
     Pages: PAGES,
-    Layout: Layout,
+    Layout: __Layout,
 };
