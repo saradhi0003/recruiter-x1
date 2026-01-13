@@ -18,6 +18,7 @@ import EmailInbox from './pages/EmailInbox';
 import EmailSettings from './pages/EmailSettings';
 import EmailTemplateBuilder from './pages/EmailTemplateBuilder';
 import Expenses from './pages/Expenses';
+import Goals from './pages/Goals';
 import Home from './pages/Home';
 import Invoices from './pages/Invoices';
 import JobDetails from './pages/JobDetails';
@@ -39,7 +40,6 @@ import SkillMatrix from './pages/SkillMatrix';
 import Submissions from './pages/Submissions';
 import TaskDetails from './pages/TaskDetails';
 import Tasks from './pages/Tasks';
-import Goals from './pages/Goals';
 import __Layout from './Layout.jsx';
 
 
@@ -64,6 +64,7 @@ export const PAGES = {
     "EmailSettings": EmailSettings,
     "EmailTemplateBuilder": EmailTemplateBuilder,
     "Expenses": Expenses,
+    "Goals": Goals,
     "Home": Home,
     "Invoices": Invoices,
     "JobDetails": JobDetails,
@@ -85,7 +86,6 @@ export const PAGES = {
     "Submissions": Submissions,
     "TaskDetails": TaskDetails,
     "Tasks": Tasks,
-    "Goals": Goals,
 }
 
 export const pagesConfig = {

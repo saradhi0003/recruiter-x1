@@ -30,7 +30,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from "lucide-react";
 import {
   Table,
@@ -54,6 +55,7 @@ import PageHeader from "@/components/common/PageHeader";
 import EmailBlastModal from "../components/jobs/EmailBlastModal";
 import ImportModal from "@/components/common/ImportModal";
 import JobForm from "../components/jobs/JobForm";
+import BulkJobPaste from "../components/jobs/BulkJobPaste";
 import { usePermissions } from "@/components/common/PermissionsContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import DeleteConfirmModal from "@/components/common/DeleteConfirmModal";
@@ -77,6 +79,7 @@ export default function JobsPage() {
   const [showJobForm, setShowJobForm] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
   const [showImport, setShowImport] = useState(false);
+  const [showBulkPaste, setShowBulkPaste] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [jobToDelete, setJobToDelete] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -545,7 +548,11 @@ export default function JobsPage() {
             </Button>
             <Button variant="outline" className="gap-2 whitespace-nowrap" onClick={() => setShowImport(true)}>
               <Upload className="w-4 h-4" />
-              Import
+              Import CSV
+            </Button>
+            <Button variant="outline" className="gap-2 whitespace-nowrap" onClick={() => setShowBulkPaste(true)}>
+              <FileText className="w-4 h-4" />
+              Paste Requirement
             </Button>
             <PermissionGate entity="Job" action="create">
               <Button variant="outline" className="gap-2 bg-white text-blue-700 hover:bg-slate-50" onClick={() => loadData(true)}>
@@ -1108,6 +1115,18 @@ export default function JobsPage() {
           entityName="Jobs"
           entitySdk={Job}
           onImported={() => { setShowImport(false); loadData(true); }}
+        />
+      )}
+
+      {showBulkPaste && (
+        <BulkJobPaste
+          open={showBulkPaste}
+          onClose={() => setShowBulkPaste(false)}
+          onSuccess={() => {
+            setShowBulkPaste(false);
+            loadData(true);
+          }}
+          companies={companies}
         />
       )}
 
