@@ -737,7 +737,7 @@ export default function CompaniesPage() { // Renamed component
             const openJobsCount = jobCounts.get(company.id) || 0;
 
             return (
-              <div key={company.id} onClick={() => setSelectedCompany(company)}
+              <div key={company.id} onClick={() => { setSelectedCompany(company); window.dispatchEvent(new CustomEvent("preview:open", { detail: { entity: "Company", id: company.id } })); }}
                 style={{ display:"grid", gridTemplateColumns:"1.8fr 120px 130px 90px 90px 80px 36px", gap:0, padding:"10px 20px", borderBottom:idx<paginatedConn.length-1?"1px solid #F2F2F7":"none", alignItems:"center", cursor:"pointer", background:isSelected?"rgba(0,113,227,.05)":"transparent", transition:"background 100ms" }}
                 onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background="#F9F9FB"; }}
                 onMouseLeave={e => { e.currentTarget.style.background=isSelected?"rgba(0,113,227,.05)":"transparent"; }}>
