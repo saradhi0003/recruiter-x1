@@ -74,6 +74,104 @@ button:focus-visible {
 
 
 
+/* ─── Carbon & Ember Design System ─── */
+@layer base {
+:root {
+  --carbon-base: #0A0B0D;
+  --carbon-surface: #111318;
+  --carbon-surface-2: #1A1D23;
+  --carbon-surface-3: #252830;
+  --ember: #E8A020;
+  --ember-dim: rgba(232, 160, 32, 0.15);
+  --ember-glow: rgba(232, 160, 32, 0.08);
+  --teal: #3ECFB2;
+  --teal-dim: rgba(62, 207, 178, 0.15);
+  --text-primary: #EDE9E4;
+  --text-secondary: #9BA3AF;
+  --text-muted: #5A6070;
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-highlight: rgba(232,160,32,0.2);
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono: 'DM Mono', 'Courier New', monospace;
+  --font-ui: 'Instrument Sans', system-ui, sans-serif;
+}
+
+@keyframes ember-breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes line-grow {
+  from { width: 0; }
+  to { width: 100%; }
+}
+@keyframes pulse-ember {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232,160,32,0); }
+  50% { box-shadow: 0 0 0 8px rgba(232,160,32,0.08); }
+}
+
+.animate-stagger-1 { animation: stagger-in 0.6s ease forwards; animation-delay: 0ms; opacity: 0; }
+.animate-stagger-2 { animation: stagger-in 0.6s ease forwards; animation-delay: 120ms; opacity: 0; }
+.animate-stagger-3 { animation: stagger-in 0.6s ease forwards; animation-delay: 240ms; opacity: 0; }
+.animate-stagger-4 { animation: stagger-in 0.6s ease forwards; animation-delay: 360ms; opacity: 0; }
+.animate-stagger-5 { animation: stagger-in 0.6s ease forwards; animation-delay: 480ms; opacity: 0; }
+.animate-stagger-6 { animation: stagger-in 0.6s ease forwards; animation-delay: 600ms; opacity: 0; }
+
+.font-display { font-family: var(--font-display); }
+.font-mono-dm { font-family: var(--font-mono); }
+.font-ui { font-family: var(--font-ui); }
+
+.ember-card {
+  background: var(--carbon-surface-2);
+  border: 1px solid var(--border-subtle);
+  border-top: 1px solid rgba(232,160,32,0.12);
+  transition: border-color 0.3s, transform 0.2s, box-shadow 0.3s;
+}
+.ember-card:hover {
+  border-color: var(--border-highlight);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(232,160,32,0.1);
+}
+
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease;
+}
+
+.stat-number {
+  font-family: var(--font-mono);
+  font-size: 2.8rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-primary);
+  animation: count-up 0.5s ease forwards;
+}
+
+.ember-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ember), transparent);
+  opacity: 0.3;
+}
+
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.4;
+  border-radius: inherit;
+}
+} /* end @layer base for Carbon & Ember */
+
 @layer base {
   :root {
     --background: 0 0% 100%;

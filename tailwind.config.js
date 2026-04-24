@@ -82,6 +82,26 @@ module.exports = {
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out'
+  		},
+  		fontFamily: {
+  			display: ['Cormorant Garamond', 'Georgia', 'serif'],
+  			mono: ['DM Mono', 'Courier New', 'monospace'],
+  			ui: ['Instrument Sans', 'system-ui', 'sans-serif'],
+  		},
+  		colors: {
+  			carbon: {
+  				base: '#0A0B0D',
+  				surface: '#111318',
+  				'surface-2': '#1A1D23',
+  				'surface-3': '#252830',
+  			},
+  			ember: {
+  				DEFAULT: '#E8A020',
+  				dim: 'rgba(232,160,32,0.15)',
+  			},
+  			teal: {
+  				spark: '#3ECFB2',
+  			}
   		}
   	}
   },
