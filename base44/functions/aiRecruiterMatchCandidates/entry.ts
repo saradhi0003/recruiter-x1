@@ -41,6 +41,27 @@ async function callOpenAI(params) {
   }
 }
 
+async function callBase44LLM(base44, params) {
+  const { systemPrompt = "", userPrompt = "" } = params;
+  const response = await base44.integrations.Core.InvokeLLM({
+    prompt: `${systemPrompt}\n\n${userPrompt}`,
+    response_json_schema: {
+      type: "object",
+      properties: {
+        recommendation: { type: "string" },
+        matched_skills: { type: "array", items: { type: "string" } },
+        missing_skills: { type: "array", items: { type: "string" } },
+        risk_flags: { type: "array", items: { type: "string" } },
+        strengths: { type: "array", items: { type: "string" } },
+        weaknesses: { type: "array", items: { type: "string" } },
+        summary: { type: "string" },
+        explanation: { type: "string" },
+      },
+    },
+  });
+  return response;
+}
+
 function normalizeSkills(skills) {
   return (skills || []).map(s => (typeof s === "string" ? s.toLowerCase().trim() : "")).filter(Boolean);
 }
@@ -159,12 +180,31 @@ Deno.serve(async (req) => {
     for (const item of topCandidates) {
       const { candidate, deterministicScore } = item;
 
+      let explanation;
+      let modelUsed = "gpt-4o-mini";
+      
       try {
-        const explanation = await callOpenAI({
+        explanation = await callOpenAI({
           model: "gpt-4o-mini",
           systemPrompt: "You are an expert recruiter. Analyze the fit between a job and candidate. Return JSON with: recommendation (strong_submit/maybe/not_recommended), matched_skills, missing_skills, risk_flags (array), strengths, weaknesses, summary, explanation.",
           userPrompt: `Job: ${job.title}, Required: ${(job.required_skills || []).join(", ")}, Preferred: ${(job.preferred_skills || []).join(", ")}. Candidate: ${candidate.first_name} ${candidate.last_name}, Skills: ${(candidate.skills || []).join(", ")}, Experience: ${candidate.experience_years} years, Availability: ${candidate.availability}.`,
         });
+      } catch (openaiErr) {
+        // Fallback to Base44 LLM if OpenAI fails
+        console.warn(`OpenAI failed for candidate ${candidate.id}, falling back to Base44 LLM:`, openaiErr.message);
+        try {
+          explanation = await callBase44LLM(base44, {
+            systemPrompt: "You are an expert recruiter. Analyze the fit between a job and candidate. Return JSON with: recommendation (strong_submit/maybe/not_recommended), matched_skills, missing_skills, risk_flags (array), strengths, weaknesses, summary, explanation.",
+            userPrompt: `Job: ${job.title}, Required: ${(job.required_skills || []).join(", ")}, Preferred: ${(job.preferred_skills || []).join(", ")}. Candidate: ${candidate.first_name} ${candidate.last_name}, Skills: ${(candidate.skills || []).join(", ")}, Experience: ${candidate.experience_years} years, Availability: ${candidate.availability}.`,
+          });
+          modelUsed = "base44-llm";
+        } catch (base44Err) {
+          console.warn(`Base44 LLM also failed for candidate ${candidate.id}:`, base44Err.message);
+          throw base44Err;
+        }
+      }
+
+      try {
 
         const requiredSkills = normalizeSkills(job.required_skills);
         const candidateSkills = normalizeSkills(candidate.skills);
@@ -176,13 +216,13 @@ Deno.serve(async (req) => {
           score: Math.min(100, deterministicScore + (explanation.score_adjustment || 0)),
           recommendation: explanation.recommendation || "maybe",
           matched_skills: matched.length > 0 ? matched : (explanation.matched_skills || []),
-          missing_skills: missing.length > 0 ? missing : (explanation.missing_skills || []),
-          risk_flags: explanation.risk_flags || [],
-          strengths: explanation.strengths || [],
-          weaknesses: explanation.weaknesses || [],
-          ai_summary: explanation.summary || explanation.ai_summary || "",
-          explanation: explanation.explanation || "",
-          model_used: "gpt-4o-mini",
+           missing_skills: missing.length > 0 ? missing : (explanation.missing_skills || []),
+           risk_flags: explanation.risk_flags || [],
+           strengths: explanation.strengths || [],
+           weaknesses: explanation.weaknesses || [],
+           ai_summary: explanation.summary || explanation.ai_summary || "",
+           explanation: explanation.explanation || "",
+           model_used: modelUsed,
         };
 
         // Save to CandidateMatchResult
@@ -199,7 +239,7 @@ Deno.serve(async (req) => {
           weaknesses: result.weaknesses,
           ai_summary: result.ai_summary,
           explanation: result.explanation,
-          model_used: "gpt-4o-mini",
+          model_used: modelUsed,
         });
 
         matches.push(result);
