@@ -44,12 +44,12 @@ export default function KeyboardShortcuts({ open, onClose }) {
                     <span className="text-sm text-slate-700">{item.description}</span>
                     <div className="flex items-center gap-1">
                       {item.keys.map((key, k) => (
-                        <React.Fragment key={k}>
+                        <div key={k}>
                           <kbd className="px-2 py-1 text-xs bg-slate-100 border border-slate-300 rounded">
                             {key}
                           </kbd>
-                          {k < item.keys.length - 1 && <span className="text-slate-400 text-xs">+</span>}
-                        </React.Fragment>
+                          {k < item.keys.length - 1 && <span className="text-slate-400 text-xs mx-1">+</span>}
+                        </div>
                       ))}
                     </div>
                   </div>

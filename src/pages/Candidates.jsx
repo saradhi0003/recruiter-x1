@@ -95,7 +95,7 @@ export default function Candidates() {
   const [showImport, setShowImport] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
-  const [selectedIds, setSelectedIds] = new useState(new Set());
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [showBulkUpdate, setShowBulkUpdate] = useState(false);
 
@@ -714,11 +714,10 @@ export default function Candidates() {
 
       {/* ── Right Preview Panel ── */}
       <RightPreviewPanel open={!!selectedCandidate && !showForm} title="Candidate Details" onClose={() => setSelectedCandidate(null)}>
-        {selectedCandidate && (
-          <CandidatePreview candidate={selectedCandidate} onEdit={handleEdit}
-            onUpdated={() => { loadCandidates(true); emitEntityChanged("Candidate"); const updated = candidates.find(c=>c.id===selectedCandidate.id); if(updated) setSelectedCandidate(updated); }} />
-        )}
-      </RightPreviewPanel>
+         {selectedCandidate && (
+           <CandidatePreview id={selectedCandidate.id} />
+         )}
+       </RightPreviewPanel>
 
       {/* ── Modals ── */}
       {showForm && <CandidateForm candidate={editingCandidate} onSave={handleAddCandidate} onCancel={()=>{setShowForm(false);setEditingCandidate(null);}} />}
