@@ -213,7 +213,9 @@ export default function Dashboard() {
     dashGuard.current.ts = Date.now();
   }, [listFilterFor]);
 
-  useEffect(() => { loadDashboardData(); }, [loadDashboardData]);
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const completeTask = async (taskId) => {
     setCompletingTask(taskId);
@@ -320,6 +322,10 @@ export default function Dashboard() {
   const recentCandidates = [...candidates]
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
     .slice(0, 6);
+
+  if (!listFilterFor) {
+    return <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
