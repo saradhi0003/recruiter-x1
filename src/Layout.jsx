@@ -265,6 +265,9 @@ export default function Layout({ children, currentPageName }) {
     try { return JSON.parse(localStorage.getItem("sidebar_pinned") || "true"); } catch { return true; }
   });
 
+  // Cache quick stats to avoid repeated fetches on navigation
+  const quickStatsCacheRef = React.useRef(null);
+
   const toggleSidebar = React.useCallback(() => {
     setSidebarCollapsed(prev => {
       const next = !prev;
@@ -381,17 +384,23 @@ export default function Layout({ children, currentPageName }) {
     return qp.get("hide_badge") === "true";
   }, [location.search]);
 
-  // Load quick stats for sidebar
+  // Load quick stats for sidebar (non-blocking, cached)
   React.useEffect(() => {
     if (skipQuickStats) {
       setQsLoading(false);
       return;
     }
 
+    // If we have cached stats, use them immediately
+    if (quickStatsCacheRef.current) {
+      setQuickStats(quickStatsCacheRef.current);
+      setQsLoading(false);
+    }
+
     const loadQuickStats = async () => {
       const now = Date.now();
-      if (qsGuard.current.inFlight || now - qsGuard.current.ts < 30000) {
-        setQsLoading(false);
+      // Only refetch every 60 seconds or on first load
+      if (qsGuard.current.inFlight || (qsGuard.current.ts > 0 && now - qsGuard.current.ts < 60000)) {
         return;
       }
 
@@ -400,12 +409,12 @@ export default function Layout({ children, currentPageName }) {
 
       try {
         const [jobsData, candidatesData, applicationsData] = await Promise.all([
-          Job.list().catch(() => []),
-          Candidate.list().catch(() => []),
-          Application.list().catch(() => [])
+          Job.filter({ status: 'open' }, '', 500).catch(() => []),
+          Candidate.filter({ status: 'active' }, '-created_date', 500).catch(() => []),
+          Application.filter({ status: 'hired' }, '-created_date', 500).catch(() => [])
         ]);
 
-        const activeJobs = (jobsData || []).filter(job => job.status === 'open').length;
+        const activeJobs = (jobsData || []).length;
         
         const today = new Date();
         const sevenDaysAgo = new Date(today);
@@ -416,21 +425,23 @@ export default function Layout({ children, currentPageName }) {
         }).length;
 
         const thisMonthPlacements = (applicationsData || []).filter(app => {
-          if (app.status !== 'hired') return false;
           const placementDate = new Date(app.created_date);
           return placementDate.getMonth() === today.getMonth() &&
                  placementDate.getFullYear() === today.getFullYear();
         }).length;
 
-        setQuickStats({ activeJobs, newCandidates, thisMonthPlacements });
+        const stats = { activeJobs, newCandidates, thisMonthPlacements };
+        quickStatsCacheRef.current = stats;
+        setQuickStats(stats);
       } catch (error) {
-        console.error("Error loading quick stats:", error);
+        console.warn("Error loading quick stats:", error);
       } finally {
         setQsLoading(false);
         qsGuard.current.inFlight = false;
       }
     };
 
+    // Load asynchronously in background
     loadQuickStats();
   }, [skipQuickStats]);
 
