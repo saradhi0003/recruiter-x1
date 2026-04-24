@@ -13,10 +13,12 @@ import { usePermissions } from "@/components/common/PermissionsContext";
 import { getRolesCached } from "@/components/utils/rolesCache";
 import { addNotification } from "@/components/notifications/NotificationToast";
 
-import WidgetRenderer from "@/components/dashboard/WidgetRenderer";
-import BuilderModal from "@/components/dashboard/BuilderModal";
+import { lazy, Suspense } from "react";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
-import DataListModal from "@/components/common/DataListModal";
+
+const WidgetRenderer = lazy(() => import("@/components/dashboard/WidgetRenderer"));
+const BuilderModal = lazy(() => import("@/components/dashboard/BuilderModal"));
+const DataListModal = lazy(() => import("@/components/common/DataListModal"));
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip
 } from "recharts";
@@ -599,8 +601,10 @@ export default function Dashboard() {
                           <Draggable key={w.id} draggableId={w.id} index={idx}>
                             {(drag) => (
                               <div ref={drag.innerRef} {...drag.draggableProps} {...drag.dragHandleProps}>
-                                <WidgetRenderer widget={w} refreshKey={refreshKey} />
-                              </div>
+                                        <Suspense fallback={null}>
+                                          <WidgetRenderer widget={w} refreshKey={refreshKey} />
+                                        </Suspense>
+                                      </div>
                             )}
                           </Draggable>
                         ))}
@@ -611,8 +615,12 @@ export default function Dashboard() {
                 </DragDropContext>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {widgets.map(w => <WidgetRenderer key={w.id} widget={w} refreshKey={refreshKey} />)}
-                </div>
+                   {widgets.map(w => (
+                     <Suspense key={w.id} fallback={null}>
+                       <WidgetRenderer widget={w} refreshKey={refreshKey} />
+                     </Suspense>
+                   ))}
+                 </div>
               )
             )}
           </>
@@ -846,19 +854,21 @@ export default function Dashboard() {
         )}
       </div>
 
-      <BuilderModal
-        open={builderOpen}
-        onClose={() => setBuilderOpen(false)}
-        initial={config || { name: "Global Dashboard", description: "", widgets: [] }}
-        onSave={saveGlobalDashboard}
-      />
-      <DataListModal
-        open={modal.open}
-        title={modal.title}
-        columns={modal.columns}
-        rows={modal.rows}
-        onClose={() => setModal({ open: false, title: "", columns: [], rows: [] })}
-      />
+      <Suspense fallback={null}>
+        <BuilderModal
+          open={builderOpen}
+          onClose={() => setBuilderOpen(false)}
+          initial={config || { name: "Global Dashboard", description: "", widgets: [] }}
+          onSave={saveGlobalDashboard}
+        />
+        <DataListModal
+          open={modal.open}
+          title={modal.title}
+          columns={modal.columns}
+          rows={modal.rows}
+          onClose={() => setModal({ open: false, title: "", columns: [], rows: [] })}
+        />
+      </Suspense>
     </div>
   );
 }
