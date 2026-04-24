@@ -151,7 +151,7 @@ function AccountsNav({ location, collapsed }) {
 
   return (
     <SidebarGroup className="mt-2">
-      <SidebarGroupLabel className={`sidebar-group-label text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2 ${collapsed ? "hidden" : ""}`}>
+      <SidebarGroupLabel className={`sidebar-group-label text-[10px] font-semibold text-[#475569] uppercase tracking-widest px-3 py-2 ${collapsed ? "hidden" : ""}`}>
         Accounts
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -160,10 +160,10 @@ function AccountsNav({ location, collapsed }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                className={`transition-all duration-200 rounded-lg ${
+                className={`transition-all duration-150 rounded-md ${
                   location.pathname === createPageUrl("Invoices")
-                    ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                    : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                    ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                    : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
                 <Link
@@ -181,10 +181,10 @@ function AccountsNav({ location, collapsed }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                className={`transition-all duration-200 rounded-lg ${
+                className={`transition-all duration-150 rounded-md ${
                   location.pathname === createPageUrl("Expenses")
-                    ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                    : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                    ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                    : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                 } ${collapsed ? "justify-center px-2" : ""}`}
               >
                 <Link
@@ -736,70 +736,40 @@ export default function Layout({ children, currentPageName }) {
       <SidebarProvider>
         <div
           className="min-h-screen flex w-full gap-4 lg:gap-6"
-          style={{
-            backgroundImage: `
-              radial-gradient(1100px 660px at 90% -10%, rgba(0,132,255,0.12), rgba(0,132,255,0) 60%),
-              radial-gradient(900px 600px at -10% 110%, rgba(108,0,255,0.10), rgba(108,0,255,0) 60%),
-              linear-gradient(135deg, rgba(0,201,255,0.05) 0%, rgba(0,132,255,0.05) 40%, rgba(108,0,255,0.05) 100%)
-            `,
-            backgroundColor: "#F9FBFF",
-            backgroundAttachment: "fixed"
-          }}
+          style={{ backgroundColor: "#F8FAFC" }}
         >
           <style>{`
             :root {
-              --brand-cyan: #00C9FF;
-              --brand-blue: #0084FF;
-              --brand-purple: #6C00FF;
-              --radius-xl: 14px;
-              --shadow-card: 0 12px 28px rgba(2, 6, 23, 0.06);
-              --ring: 0 0 0 3px rgba(0,132,255,0.20);
-
-              --clay-bg: #f5f7fb;
-              --clay-surface: #ffffffee;
-              --clay-shadow: 12px 12px 24px rgba(15, 23, 42, 0.12);
-              --clay-highlight: -8px -8px 20px rgba(255, 255, 255, 0.9);
-              --clay-inset: inset 0 1px 1px rgba(255,255,255,0.6);
-              --clay-radius: 18px;
-            }
-
-            .clay-surface {
-              background: var(--clay-surface);
-              border-radius: var(--clay-radius);
-              box-shadow: var(--clay-shadow), var(--clay-highlight), var(--clay-inset);
-              border: 1px solid rgba(15, 23, 42, 0.06);
-              backdrop-filter: blur(6px);
-            }
-
-            .clay-button {
-              border-radius: 14px;
-              background: linear-gradient(180deg, #ffffff, #f4f6fb);
-              box-shadow: 6px 6px 14px rgba(2, 6, 23, 0.10), -4px -4px 12px rgba(255,255,255,0.85);
-              border: 1px solid rgba(15, 23, 42, 0.06);
-              transition: transform .12s ease, box-shadow .2s ease;
-            }
-            .clay-button:hover {
-              transform: translateY(-1px);
-              box-shadow: 10px 10px 18px rgba(2, 6, 23, 0.12), -6px -6px 14px rgba(255,255,255,0.9);
-            }
-            .clay-button:active {
-              transform: translateY(0);
-              box-shadow: inset 0 2px 6px rgba(2,6,23,0.12);
+              --brand-blue: #2563EB;
+              --brand-dark: #1E293B;
             }
 
             .app-sidebar {
               transition: width .2s ease, padding .2s ease;
               will-change: width;
+              background: #0F172A;
+              border-right: 1px solid #1E293B;
             }
-            .app-sidebar[data-collapsed="true"] { width: 72px; }
-            .app-sidebar[data-collapsed="false"] { width: 280px; }
+            .app-sidebar[data-collapsed="true"] { width: 60px; }
+            .app-sidebar[data-collapsed="false"] { width: 260px; }
 
             .sidebar-label { transition: opacity .15s ease; }
             [data-collapsed="true"] .sidebar-label { opacity: 0; display: none; }
-
             [data-collapsed="true"] .sidebar-group-label { display: none; }
-
             [data-collapsed="true"] .sidebar-icon-center { justify-content: center !important; }
+
+            .clay-button {
+              border-radius: 6px;
+              background: #1E293B;
+              border: 1px solid #334155;
+              transition: background .15s ease;
+            }
+            .clay-button:hover { background: #334155; }
+            
+            .clay-surface {
+              background: #ffffff;
+              border: 1px solid #E2E8F0;
+            }
 
             @media (max-width: 1023px) {
               .app-sidebar {
@@ -809,7 +779,7 @@ export default function Layout({ children, currentPageName }) {
                 height: 100vh;
                 z-index: 1000;
                 transform: translateX(-100%);
-                width: min(320px, 80vw);
+                width: min(280px, 80vw);
               }
               .app-sidebar[data-collapsed="false"] {
                 transform: translateX(0);
@@ -817,8 +787,7 @@ export default function Layout({ children, currentPageName }) {
               .sidebar-backdrop {
                 position: fixed;
                 inset: 0;
-                background: rgba(15,23,42,.35);
-                backdrop-filter: blur(2px);
+                background: rgba(0,0,0,.5);
               }
             }
           `}</style>
@@ -834,18 +803,18 @@ export default function Layout({ children, currentPageName }) {
             className={`app-sidebar border-r border-slate-200 ${sidebarCollapsed ? "px-2" : ""} clay-surface`}
             data-collapsed={sidebarCollapsed ? "true" : "false"}
           >
-            <SidebarHeader className={`border-b border-slate-100 ${sidebarCollapsed ? "px-2 py-4" : "p-6"}`}>
+            <SidebarHeader className={`border-b border-[#1E293B] ${sidebarCollapsed ? "px-2 py-4" : "p-5"}`}>
               <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"} gap-3`}>
                 <div className="flex items-center gap-3">
                   <img
                     src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b3b1fb7f6f404f0a2709aa/0f7c64ed2_IMG_8954.jpg"
                     alt="Talent Stack"
-                    className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200"
+                    className="w-8 h-8 rounded-lg object-contain bg-white"
                   />
                   {!sidebarCollapsed && (
                     <div>
-                      <h2 className="font-bold text-slate-900 text-lg">Recruiter X</h2>
-                      <p className="text-xs text-slate-500">Recruitment Platform</p>
+                      <h2 className="font-semibold text-white text-[15px]" style={{ fontFamily: 'var(--font-display)' }}>Recruiter X</h2>
+                      <p className="text-[11px] text-[#475569]">Talent Platform</p>
                     </div>
                   )}
                 </div>
@@ -883,8 +852,8 @@ export default function Layout({ children, currentPageName }) {
               </div>
 
               <SidebarGroup>
-                <SidebarGroupLabel className={`sidebar-group-label text-xs font-semibold text-slate-500 uppercase tracking-wider ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
-                  Main Navigation
+                <SidebarGroupLabel className={`sidebar-group-label text-[10px] font-semibold text-[#475569] uppercase tracking-widest ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
+                  Recruitment
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="space-y-1">
@@ -892,10 +861,10 @@ export default function Layout({ children, currentPageName }) {
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
                           asChild
-                          className={`hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-lg ${
+                          className={`transition-all duration-150 rounded-md ${
                             location.pathname === item.url
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -915,18 +884,18 @@ export default function Layout({ children, currentPageName }) {
 
               {isAdmin && (
                 <SidebarGroup className="mt-6">
-                  <SidebarGroupLabel className={`sidebar-group-label text-xs font-semibold text-slate-500 uppercase tracking-wider ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
-                    Admin Controls
+                  <SidebarGroupLabel className={`sidebar-group-label text-[10px] font-semibold text-[#475569] uppercase tracking-widest ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
+                    Administration
                   </SidebarGroupLabel>
                   <SidebarGroupContent>
                     <SidebarMenu className="space-y-1">
                       <SidebarMenuItem>
                         <SidebarMenuButton
                           asChild
-                          className={`transition-all duration-200 rounded-lg ${
+                          className={`transition-all duration-150 rounded-md ${
                             location.pathname === createPageUrl("AccessControl")
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -943,10 +912,10 @@ export default function Layout({ children, currentPageName }) {
                       <SidebarMenuItem>
                         <SidebarMenuButton
                           asChild
-                          className={`transition-all duration-200 rounded-lg ${
+                          className={`transition-all duration-150 rounded-md ${
                             location.pathname === createPageUrl("Approvals")
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -965,8 +934,8 @@ export default function Layout({ children, currentPageName }) {
                           asChild
                           className={`transition-all duration-200 rounded-lg ${
                             location.pathname === createPageUrl("JobStack")
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -985,8 +954,8 @@ export default function Layout({ children, currentPageName }) {
                           asChild
                           className={`transition-all duration-200 rounded-lg ${
                             location.pathname === createPageUrl("AIAgents")
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -1005,8 +974,8 @@ export default function Layout({ children, currentPageName }) {
                           asChild
                           className={`transition-all duration-200 rounded-lg ${
                             location.pathname === createPageUrl("EmailBlast")
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -1025,8 +994,8 @@ export default function Layout({ children, currentPageName }) {
                           asChild
                           className={`transition-all duration-200 rounded-lg ${
                             location.pathname === createPageUrl("AutomationRules")
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -1045,8 +1014,8 @@ export default function Layout({ children, currentPageName }) {
                           asChild
                           className={`transition-all duration-200 rounded-lg ${
                             location.pathname === createPageUrl("BRD")
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -1065,8 +1034,8 @@ export default function Layout({ children, currentPageName }) {
                           asChild
                           className={`transition-all duration-200 rounded-lg ${
                             location.pathname === createPageUrl("EmailInbox")
-                              ? 'bg-blue-50 text-blue-700 shadow-sm border-r-2 border-blue-600'
-                              : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
+                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
                           } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
                         >
                           <Link
@@ -1088,14 +1057,14 @@ export default function Layout({ children, currentPageName }) {
 
               {!skipQuickStats && (
                 <SidebarGroup className="mt-8">
-                  <SidebarGroupLabel className={`sidebar-group-label text-xs font-semibold text-slate-500 uppercase tracking-wider ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
+                  <SidebarGroupLabel className={`sidebar-group-label text-[10px] font-semibold text-[#475569] uppercase tracking-widest ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
                     Quick Stats
                   </SidebarGroupLabel>
                   <SidebarGroupContent>
                     <div className={`px-3 py-2 space-y-3 ${sidebarCollapsed ? "hidden" : ""}`}>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">Active Jobs</span>
-                        <span className="font-semibold text-slate-900">
+                        <span className="text-[#94A3B8]">Active Jobs</span>
+                        <span className="font-semibold text-white">
                           {qsLoading ? <span className="inline-block w-6 h-4 bg-slate-200 rounded animate-pulse" /> : quickStats.activeJobs}
                         </span>
                       </div>
@@ -1106,8 +1075,8 @@ export default function Layout({ children, currentPageName }) {
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">This Month</span>
-                        <span className="font-semibold text-green-600">
+                        <span className="text-[#94A3B8]">This Month</span>
+                        <span className="font-semibold text-[#16A34A]">
                           {qsLoading ? <span className="inline-block w-16 h-4 bg-slate-200 rounded animate-pulse" /> : `${quickStats.thisMonthPlacements} Placed`}
                         </span>
                       </div>
@@ -1117,19 +1086,19 @@ export default function Layout({ children, currentPageName }) {
               )}
             </SidebarContent>
 
-            <SidebarFooter className={`border-t border-slate-100 ${sidebarCollapsed ? "px-2 py-3" : "p-4"}`}>
+            <SidebarFooter className={`border-t border-[#1E293B] ${sidebarCollapsed ? "px-2 py-3" : "p-4"}`}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className={`w-full justify-start gap-3 p-3 h-auto ${sidebarCollapsed ? "justify-center" : ""}`}>
                     <Avatar className="w-8 h-8">
-                      <AvatarFallback className="bg-slate-200 text-slate-600 text-sm">
+                      <AvatarFallback className="bg-[#1E293B] text-[#94A3B8] text-sm">
                         {me?.full_name ? me.full_name.charAt(0).toUpperCase() : (me?.email ? me.email.charAt(0).toUpperCase() : 'U')}
                       </AvatarFallback>
                     </Avatar>
                     {!sidebarCollapsed && (
                       <div className="flex-1 text-left min-w-0">
-                        <p className="font-medium text-slate-900 text-sm truncate">{me?.full_name || me?.email || 'User Account'}</p>
-                        <p className="text-xs text-slate-500 truncate">{myRole?.name || 'User'}</p>
+                        <p className="font-medium text-white text-sm truncate">{me?.full_name || me?.email || 'User Account'}</p>
+                        <p className="text-[11px] text-[#475569] truncate">{myRole?.name || 'User'}</p>
                       </div>
                     )}
                   </Button>
@@ -1154,7 +1123,7 @@ export default function Layout({ children, currentPageName }) {
           </Sidebar>
 
           <main className="flex-1 flex flex-col min-w-0">
-            <header className="clay-surface border-b border-slate-200 px-6 py-4 flex items-center gap-4">
+            <header className="bg-white border-b border-[#E2E8F0] px-6 py-3 flex items-center gap-4">
               <SidebarTrigger className="md:hidden hover:bg-slate-100 p-2 rounded-lg transition-colors duration-200" />
 
               <div className="flex-1 max-w-md">
@@ -1162,33 +1131,27 @@ export default function Layout({ children, currentPageName }) {
                   className="relative cursor-pointer"
                   onClick={() => setCommandPaletteOpen(true)}
                 >
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <div className="pl-10 pr-16 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-500 hover:bg-white hover:border-slate-300 transition-colors">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+                  <div className="pl-10 pr-16 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-md text-[13px] text-[#94A3B8] hover:bg-white hover:border-[#CBD5E1] transition-colors">
                     Search anything...
                   </div>
-                  <kbd className="absolute right-3 top-1/2 transform -translate-y-1/2 px-2 py-1 text-xs bg-white border border-slate-200 rounded">
+                  <kbd className="absolute right-3 top-1/2 transform -translate-y-1/2 px-1.5 py-0.5 text-[11px] bg-white border border-[#E2E8F0] rounded text-[#94A3B8]">
                     ⌘K
                   </kbd>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="relative clay-button">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="relative text-[#64748B] hover:text-[#1E293B] hover:bg-[#F1F5F9]">
+                  <Bell className="w-4.5 h-4.5" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#DC2626] rounded-full"></span>
                 </Button>
               </div>
             </header>
 
             <div className="flex-1 overflow-auto">
               <div className="relative min-h-full">
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
-                  <img
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b3b1fb7f6f404f0a2709aa/fcbc8527f_IMG_8954.jpg"
-                    alt="Talent Stack background logo"
-                    className="w-[520px] max-w-[70vw] opacity-[0.05]"
-                  />
-                </div>
+                <div className="absolute inset-0 pointer-events-none select-none z-0"></div>
                 <div className="relative z-10 px-4 md:px-6 lg:pr-6 lg:pl-0 pb-6">
                   {isBlocked ? (
                     <AccessBlocker user={me} />
