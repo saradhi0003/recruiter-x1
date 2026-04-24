@@ -501,7 +501,7 @@ Provide skill_gaps, hiring_forecast, pipeline_health, action_items, and executiv
 
   return (
     <div className="min-h-screen relative overflow-hidden font-ui p-5 lg:p-8 space-y-8"
-      style={{ background: 'var(--carbon-base)', color: 'var(--text-primary)' }}
+      style={{ background: 'linear-gradient(135deg, #0F1117 0%, #141828 50%, #111520 100%)', color: 'var(--text-primary)' }}
     >
       {/* ── Background atmosphere */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">

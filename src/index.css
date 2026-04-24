@@ -86,10 +86,10 @@
 
 /* ─── Carbon & Ember Design System ─── */
 :root {
-  --carbon-base: #0A0B0D;
-  --carbon-surface: #111318;
-  --carbon-surface-2: #1A1D23;
-  --carbon-surface-3: #252830;
+  --carbon-base: #0F1117;
+  --carbon-surface: #161B27;
+  --carbon-surface-2: #1E2535;
+  --carbon-surface-3: #263045;
   --ember: #E8A020;
   --ember-dim: rgba(232, 160, 32, 0.15);
   --ember-glow: rgba(232, 160, 32, 0.08);
