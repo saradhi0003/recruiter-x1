@@ -18,8 +18,15 @@ const PRIORITY_COLOR = { low: "#6B7280", medium: "#D97706", high: "#EA580C", urg
 const REMOTE_COLOR   = { onsite: "#2563EB", remote: "#16A34A", hybrid: "#7C3AED" };
 
 function avatarGrad(name) {
-  const p = ["#3B82F6,#6366F1","#F59E0B,#EA580C","#8B5CF6,#7C3AED","#10B981,#059669","#0EA5E9,#0284C7"];
-  const [a, b] = p[(name?.charCodeAt(0)||0) % p.length].split(",");
+  const colors = [
+    "#EC4899,#DB2777", // pink
+    "#F59E0B,#EA580C", // orange  
+    "#3B82F6,#1E40AF", // blue
+    "#10B981,#059669", // green
+    "#8B5CF6,#7C3AED", // purple
+    "#EF4444,#DC2626"  // red
+  ];
+  const [a, b] = colors[(name?.charCodeAt(0)||0) % colors.length].split(",");
   return `linear-gradient(135deg,${a},${b})`;
 }
 
@@ -80,7 +87,7 @@ export default function JobPreview({ id }) {
                 <ArrowUpRight style={{ width: 14, height: 14, color: "#86868B" }} />
               </Link>
             </div>
-            <div style={{ fontSize: 13, color: "#86868B" }}>{company?.name || "—"}</div>
+            <div style={{ fontSize: 13, color: "#86868B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>—</div>
           </div>
           <Link to={createPageUrl(`JobDetails?id=${job.id}&edit=true`)} data-intent="edit"
             style={{ fontSize: 12, fontWeight: 600, color: "#0071E3", padding: "5px 12px", borderRadius: 20, border: "1px solid #0071E3", textDecoration: "none", flexShrink: 0 }}>
@@ -93,19 +100,14 @@ export default function JobPreview({ id }) {
           <span style={{ fontSize: 11.5, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: sb.bg, color: sb.c }}>
             {sb.label}
           </span>
-          {job.priority && (
-            <span style={{ fontSize: 11.5, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: "rgba(0,0,0,.05)", color: PRIORITY_COLOR[job.priority] || "#86868B" }}>
-              {job.priority.charAt(0).toUpperCase() + job.priority.slice(1)} Priority
-            </span>
-          )}
           {job.remote_type && (
-            <span style={{ fontSize: 11.5, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: "rgba(0,0,0,.05)", color: REMOTE_COLOR[job.remote_type] || "#86868B" }}>
+            <span style={{ fontSize: 11.5, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: "rgba(0,113,227,.10)", color: "#0071E3" }}>
               {job.remote_type.charAt(0).toUpperCase() + job.remote_type.slice(1)}
             </span>
           )}
-          {job.employment_type && (
-            <span style={{ fontSize: 11.5, fontWeight: 500, padding: "3px 10px", borderRadius: 20, background: "rgba(0,0,0,.05)", color: "#6E6E73" }}>
-              {job.employment_type.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+          {job.positions_available && job.positions_available > 0 && (
+            <span style={{ fontSize: 11.5, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: "rgba(16,185,129,.10)", color: "#10B981" }}>
+              {job.positions_available} Open {job.positions_available === 1 ? "Role" : "Roles"}
             </span>
           )}
         </div>
@@ -143,33 +145,20 @@ export default function JobPreview({ id }) {
           {job.experience_required != null && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
               <Clock style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
-              {job.experience_required}+ years experience
-            </div>
-          )}
-          {job.positions_available != null && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
-              <Users style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
-              {job.positions_available} position{job.positions_available !== 1 ? "s" : ""} open
+              {job.experience_required}+ years
             </div>
           )}
           {job.due_date && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
               <Calendar style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
-              Target fill: {new Date(job.due_date).toLocaleDateString()}
+              {new Date(job.due_date).toLocaleDateString()}
             </div>
           )}
           {job.hiring_manager && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
-              <Briefcase style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
-              HM: {job.hiring_manager}
+              <Users style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
+              {job.hiring_manager}
             </div>
-          )}
-          {company?.website && (
-            <a href={company.website} target="_blank" rel="noreferrer"
-              style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#0071E3", textDecoration: "none" }}>
-              <ExternalLink style={{ width: 14, height: 14, flexShrink: 0 }} />
-              Company website
-            </a>
           )}
         </div>
       </div>
