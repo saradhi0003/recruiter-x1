@@ -54,7 +54,7 @@ import ImportModal from "@/components/common/ImportModal";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import CompanyEmailBlastModal from "@/components/companies/CompanyEmailBlastModal";
-import CompanyDetailsModal from "@/components/companies/CompanyDetailsModal";
+
 import DeleteConfirmModal from "@/components/common/DeleteConfirmModal";
 import { usePermissions } from "@/components/common/PermissionsContext";
 import ListViewSettingsModal from "@/components/common/ListViewSettingsModal";
@@ -86,8 +86,7 @@ export default function CompaniesPage() { // Renamed component
   const [formCompany, setFormCompany] = useState(null); // Renamed from editingCompany
   const [showImport, setShowImport] = useState(false);
   const [showEmailBlast, setShowEmailBlast] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
+
   const [showDelete, setShowDelete] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
   const [views, setViews] = useState([]);
@@ -426,7 +425,7 @@ export default function CompaniesPage() { // Renamed component
       render: (company) => (
         <div>
           <button
-            onClick={(e) => { e.stopPropagation(); setSelectedCompanyId(company.id); setShowDetails(true); }}
+            onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("preview:open", { detail: { entity: "Company", id: company.id } })); }}
             className="font-medium text-blue-600 hover:underline"
             title="Open connection"
           >
@@ -750,9 +749,7 @@ export default function CompaniesPage() { // Renamed component
                   </div>
                   <div style={{ minWidth:0 }}>
                     <div style={{ fontSize:13.5, fontWeight:600, color:"#1D1D1F", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                      <button onClick={e => { e.stopPropagation(); setSelectedCompanyId(company.id); setShowDetails(true); }} style={{ background:"none", border:"none", cursor:"pointer", color:"inherit", fontWeight:"inherit", fontSize:"inherit", padding:0 }}>
-                        {company.name}
-                      </button>
+                      {company.name}
                     </div>
                     <div style={{ fontSize:11.5, color:"#86868B" }}>{company.location || "—"}</div>
                   </div>
@@ -772,7 +769,7 @@ export default function CompaniesPage() { // Renamed component
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={()=>{setSelectedCompanyId(company.id);setShowDetails(true);}}><Eye className="w-4 h-4 mr-2"/>View Details</DropdownMenuItem>
+                      <DropdownMenuItem onClick={()=>window.dispatchEvent(new CustomEvent("preview:open", { detail: { entity: "Company", id: company.id } }))}><Eye className="w-4 h-4 mr-2"/>View Details</DropdownMenuItem>
                       <PermissionGate entity="Company" action="update">
                         <DropdownMenuItem onClick={()=>{setFormCompany(company);setShowForm(true);}}><Edit className="w-4 h-4 mr-2"/>Edit</DropdownMenuItem>
                       </PermissionGate>
@@ -844,13 +841,7 @@ export default function CompaniesPage() { // Renamed component
         />
       )}
 
-      {showDetails && selectedCompanyId && (
-        <CompanyDetailsModal
-          companyId={selectedCompanyId}
-          onClose={() => { setShowDetails(false); setSelectedCompanyId(null); }}
-          onUpdated={loadCompanies}
-        />
-      )}
+
 
       {showDelete && companyToDelete && (
         <DeleteConfirmModal
