@@ -28,20 +28,34 @@ export default function JobIntakePanel({ onJobParsed, loading, currentRun }) {
   };
 
   const handleParseJob = async () => {
-    const text = method === "existing" ? "" : jobText;
-    const jobId = method === "existing" ? selectedJobId : null;
+    if (method === "existing" && !selectedJobId) {
+      alert("Please select a job");
+      return;
+    }
 
-    if (!text && !jobId) {
-      alert("Please select or paste a job description");
+    if (method !== "existing" && !jobText.trim()) {
+      alert("Please paste a job description");
       return;
     }
 
     setParsing(true);
     try {
+      // For existing jobs, just use directly without parsing
+      if (method === "existing") {
+        const job = jobs.find(j => j.id === selectedJobId);
+        onJobParsed({
+          success: true,
+          run_id: null,
+          job,
+          parsed: job,
+        });
+        return;
+      }
+
+      // For new jobs, parse with AI
       const response = await base44.functions.invoke("aiRecruiterParseJob", {
-        source: method === "existing" ? "app" : "manual",
-        raw_text: text || "",
-        job_id: jobId || null,
+        source: "manual",
+        raw_text: jobText,
       });
 
       if (!response.success) {
