@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Users, Briefcase, Building2, TrendingUp, ArrowUpRight, ArrowDownRight,
+  Users, Briefcase, Building2, TrendingUp, ArrowUpRight,
   RefreshCcw, Sparkles, AlertTriangle, CheckCircle2, Loader2, Plus,
-  ChevronRight, Circle, Clock, Activity, Brain, Zap, ArrowRight
+  ChevronRight, Clock, Activity, Brain, Zap, ArrowRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -21,96 +20,95 @@ import BuilderModal from "@/components/dashboard/BuilderModal";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import DataListModal from "@/components/common/DataListModal";
 import {
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar,
-  XAxis, YAxis, Tooltip, PieChart, Pie, Cell
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip
 } from "recharts";
 
-const STATUS_COLORS = {
-  active: "#16A34A", inactive: "#94A3B8", placed: "#2563EB",
-  screened: "#D97706", on_bench: "#7C3AED"
-};
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-function KPICard({ title, value, change, changeUp, icon: Icon, sub, onClick, loading }) {
+function MetricCard({ label, value, sub, trend, trendUp, onClick, loading }) {
   return (
     <div
       onClick={onClick}
-      className={`bg-white border border-[#E2E8F0] rounded-lg p-5 group ${onClick ? "cursor-pointer hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-shadow" : ""}`}
+      className={`bg-white border border-[#E2E8F0] rounded-xl px-6 py-5 ${onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""}`}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-[#EFF6FF] flex items-center justify-center">
-            <Icon className="w-4 h-4 text-[#2563EB]" />
-          </div>
-          <span className="text-[13px] text-[#64748B] font-medium">{title}</span>
-        </div>
-        {change && (
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${changeUp ? "bg-[#F0FDF4] text-[#16A34A]" : "bg-[#FFF7ED] text-[#D97706]"}`}>
-            {changeUp ? "+" : ""}{change}
+      <p className="text-[13px] text-[#94A3B8] font-medium mb-1">{label}</p>
+      {loading ? (
+        <div className="h-10 w-20 bg-slate-100 rounded animate-pulse my-1" />
+      ) : (
+        <p className="text-[40px] font-bold text-[#1E293B] leading-none" style={{ fontFamily: 'var(--font-display)' }}>
+          {value}
+        </p>
+      )}
+      <div className="flex items-center gap-1.5 mt-2">
+        {trend && (
+          <span className={`flex items-center gap-0.5 text-[12px] font-semibold ${trendUp ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+            {trend}
           </span>
         )}
+        {sub && <span className="text-[12px] text-[#94A3B8]">{sub}</span>}
       </div>
-      {loading ? (
-        <div className="h-8 w-16 bg-slate-100 rounded animate-pulse mb-1" />
-      ) : (
-        <div className="text-[32px] font-semibold text-[#1E293B] leading-none mb-1" style={{ fontFamily: 'var(--font-display)' }}>
-          {value}
-        </div>
-      )}
-      {sub && <p className="text-[12px] text-[#94A3B8] mt-1">{sub}</p>}
-      {onClick && (
-        <div className="flex items-center gap-1 text-[12px] text-[#2563EB] mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          View details <ArrowRight className="w-3 h-3" />
-        </div>
-      )}
     </div>
   );
 }
 
-function PipelineStage({ label, count, avgDays, conversion, isLast }) {
-  return (
-    <div className="flex items-center">
-      <div className="bg-white border border-[#E2E8F0] rounded-lg p-4 min-w-[120px] hover:border-[#2563EB] hover:shadow-sm transition-all cursor-pointer">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-2">{label}</div>
-        <div className="text-[24px] font-semibold text-[#1E293B]" style={{ fontFamily: 'var(--font-display)' }}>{count}</div>
-        <div className="text-[11px] text-[#64748B] mt-1">{avgDays}d avg</div>
-        {conversion !== null && (
-          <div className="text-[11px] text-[#16A34A] font-medium mt-0.5">{conversion}% →</div>
-        )}
-      </div>
-      {!isLast && (
-        <div className="flex items-center mx-1">
-          <div className="w-6 h-px bg-[#E2E8F0]" />
-          <ChevronRight className="w-3 h-3 text-[#CBD5E1] -ml-1" />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AIInsightCard({ icon: Icon, insight, action, color = "blue" }) {
-  const colors = {
-    blue: { bg: "bg-[#EFF6FF]", icon: "text-[#2563EB]" },
-    amber: { bg: "bg-[#FFFBEB]", icon: "text-[#D97706]" },
-    green: { bg: "bg-[#F0FDF4]", icon: "text-[#16A34A]" },
-    red: { bg: "bg-[#FEF2F2]", icon: "text-[#DC2626]" },
+function PipelineFunnelBar({ stages, loading }) {
+  const max = Math.max(...stages.map(s => s.count), 1);
+  const COLORS = {
+    Applied: "#2563EB", Screened: "#F97316", Interview: "#16A34A",
+    Offer: "#7C3AED", Placed: "#0891B2",
   };
-  const c = colors[color] || colors.blue;
   return (
-    <div className="flex gap-3 py-3 border-b border-[#F1F5F9] last:border-0">
-      <div className={`w-7 h-7 rounded-md ${c.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-        <Icon className={`w-3.5 h-3.5 ${c.icon}`} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-[#1E293B] leading-snug">{insight}</p>
-        {action && (
-          <button className="text-[12px] text-[#2563EB] font-medium mt-1 flex items-center gap-1 hover:underline">
-            {action} <ArrowRight className="w-3 h-3" />
-          </button>
-        )}
-      </div>
+    <div className="space-y-3">
+      {loading
+        ? Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-6 bg-slate-100 rounded animate-pulse" />)
+        : stages.map(s => (
+            <div key={s.label} className="flex items-center gap-3">
+              <span className="w-[72px] text-[13px] text-[#475569] font-medium shrink-0">{s.label}</span>
+              <div className="flex-1 h-2.5 bg-[#F1F5F9] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.max(3, (s.count / max) * 100)}%`, backgroundColor: COLORS[s.label] || "#2563EB" }}
+                />
+              </div>
+              <span className="w-8 text-right text-[13px] font-semibold text-[#1E293B]">{s.count}</span>
+            </div>
+          ))
+      }
     </div>
   );
 }
+
+function avatarColor(name = "") {
+  const palette = [
+    "bg-[#EFF6FF] text-[#2563EB]", "bg-[#F0FDF4] text-[#16A34A]",
+    "bg-[#FFF7ED] text-[#D97706]", "bg-[#F5F3FF] text-[#7C3AED]",
+    "bg-[#FEF2F2] text-[#DC2626]", "bg-[#E0F2FE] text-[#0369A1]",
+  ];
+  let h = 0; for (const c of name) h += c.charCodeAt(0);
+  return palette[h % palette.length];
+}
+
+function timeAgo(d) {
+  const s = (Date.now() - new Date(d)) / 1000;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 86400 * 7) return `${Math.floor(s / 86400)}d ago`;
+  return new Date(d).toLocaleDateString();
+}
+
+const STAGE_PILL = {
+  interviewing: "bg-[#EFF6FF] text-[#2563EB]",
+  screening: "bg-[#FFF7ED] text-[#D97706]",
+  screened: "bg-[#FFF7ED] text-[#D97706]",
+  offered: "bg-[#F0FDF4] text-[#16A34A]",
+  hired: "bg-[#F0FDF4] text-[#16A34A]",
+  submitted: "bg-[#F5F3FF] text-[#7C3AED]",
+  active: "bg-[#F8FAFC] text-[#475569]",
+  rejected: "bg-[#FEF2F2] text-[#DC2626]",
+};
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ totalCandidates: 0, activeJobs: 0, totalCompanies: 0, thisMonthPlacements: 0 });
@@ -193,9 +191,10 @@ export default function Dashboard() {
       }).length;
       setStats({ totalCandidates: candidatesData.length, activeJobs, totalCompanies: companiesData.length, thisMonthPlacements });
 
+      const todayTs = todayMidnight.getTime();
       const my = (tasks || [])
         .filter(t => ["pending", "in_progress"].includes(t.status))
-        .filter(t => !t.due_date || new Date(t.due_date).setHours(0,0,0,0) <= todayMidnight.getTime())
+        .filter(t => !t.due_date || new Date(t.due_date).setHours(0,0,0,0) <= todayTs)
         .sort((a, b) => {
           const da = a.due_date ? new Date(a.due_date) : new Date("9999");
           const db = b.due_date ? new Date(b.due_date) : new Date("9999");
@@ -293,20 +292,19 @@ export default function Dashboard() {
 
   // Pipeline stage data
   const pipelineStages = [
-    { label: "Sourced", count: candidates.filter(c => c.status === "active").length, avgDays: 2, conversion: 68 },
-    { label: "Screened", count: candidates.filter(c => c.status === "screened").length, avgDays: 3, conversion: 54 },
-    { label: "Interviewing", count: applications.filter(a => a.status === "interviewing").length, avgDays: 8, conversion: 71 },
-    { label: "Submitted", count: submissions.filter(s => s.status === "submitted").length, avgDays: 5, conversion: 45 },
-    { label: "Offer", count: applications.filter(a => a.status === "offered").length, avgDays: 4, conversion: 82 },
-    { label: "Placed", count: stats.thisMonthPlacements, avgDays: 0, conversion: null },
+    { label: "Applied",   count: candidates.filter(c => c.status === "active").length },
+    { label: "Screened",  count: candidates.filter(c => c.status === "screened").length },
+    { label: "Interview", count: applications.filter(a => a.status === "interviewing").length },
+    { label: "Offer",     count: applications.filter(a => a.status === "offered").length },
+    { label: "Placed",    count: stats.thisMonthPlacements },
   ];
 
-  // Chart data
+  const pipelineMax = Math.max(...pipelineStages.map(s => s.count), 1);
+  const PIPE_COLORS = { Applied: "#2563EB", Screened: "#F97316", Interview: "#16A34A", Offer: "#7C3AED", Placed: "#0891B2" };
+
   const statusChartData = Object.entries(
     candidates.reduce((a, c) => { a[c.status] = (a[c.status]||0)+1; return a; }, {})
   ).map(([name, value]) => ({ name: name.replace(/_/g," "), value }));
-
-  const CHART_COLORS = ["#2563EB","#16A34A","#D97706","#DC2626","#7C3AED","#0891B2"];
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -314,306 +312,390 @@ export default function Dashboard() {
     { id: "activity", label: "Activity" },
   ];
 
-  const insightTypeMap = {
-    warning: { icon: AlertTriangle, color: "amber" },
-    success: { icon: CheckCircle2, color: "green" },
-    urgent: { icon: AlertTriangle, color: "red" },
-    info: { icon: Activity, color: "blue" },
-  };
+  // Recent candidates
+  const recentCandidates = [...candidates]
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
+    .slice(0, 6);
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 bg-[#F8FAFC] min-h-screen">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'var(--font-display)' }}>
-            Dashboard
-          </h1>
-          <p className="text-[13px] text-[#64748B] mt-0.5">{dateLabel} · {quarter}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-[13px] border-[#E2E8F0] text-[#475569] hover:bg-[#F8FAFC]"
-            onClick={() => { setRefreshKey(k => k+1); loadDashboardData(true); }}
-          >
-            <RefreshCcw className="w-3.5 h-3.5" />
-            Refresh
-          </Button>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-[13px] border-[#E2E8F0] text-[#475569]"
-              onClick={() => setBuilderOpen(true)}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Customize
-            </Button>
-          )}
-          <Button
-            size="sm"
-            className="gap-1.5 text-[13px] bg-[#2563EB] hover:bg-[#1D4ED8] text-white border-0"
-            onClick={runAIAnalysis}
-            disabled={analyzingAI}
-          >
-            {analyzingAI ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}
-            {analyzingAI ? "Analyzing..." : "AI Insights"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Tab Bar */}
-      <div className="flex gap-0 border-b border-[#E2E8F0]">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? "border-[#2563EB] text-[#2563EB]"
-                : "border-transparent text-[#64748B] hover:text-[#1E293B]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "overview" && (
-        <div className="space-y-6">
-          {/* KPI Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPICard title="Total Candidates" value={stats.totalCandidates} change="vs last month" changeUp icon={Users} sub="All pipeline stages" onClick={() => openModalFor("candidates")} loading={loading} />
-            <KPICard title="Active Pipelines" value={stats.activeJobs} changeUp icon={Briefcase} sub="Open positions" onClick={() => openModalFor("jobs")} loading={loading} />
-            <KPICard title="Client Companies" value={stats.totalCompanies} changeUp icon={Building2} sub="Active accounts" onClick={() => openModalFor("companies")} loading={loading} />
-            <KPICard title="Placements This Month" value={stats.thisMonthPlacements} changeUp icon={TrendingUp} sub="Successful hires" onClick={() => openModalFor("hires")} loading={loading} />
+    <div className="min-h-screen bg-[#F8FAFC]">
+      {/* ── Header ── */}
+      <div className="bg-white border-b border-[#E2E8F0] px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[20px] font-bold text-[#1E293B]" style={{ fontFamily: 'var(--font-display)' }}>Dashboard</h1>
+            <p className="text-[12px] text-[#94A3B8] mt-0.5">{dateLabel} · {quarter}</p>
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline" size="sm"
+              className="gap-1.5 text-[13px] border-[#E2E8F0] text-[#475569]"
+              onClick={() => { setRefreshKey(k => k+1); loadDashboardData(true); }}
+            >
+              <RefreshCcw className="w-3.5 h-3.5" /> Refresh
+            </Button>
+            {isAdmin && (
+              <Button
+                variant="outline" size="sm"
+                className="gap-1.5 text-[13px] border-[#E2E8F0] text-[#475569]"
+                onClick={() => setBuilderOpen(true)}
+              >
+                <Plus className="w-3.5 h-3.5" /> Customize
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="gap-1.5 text-[13px] bg-[#2563EB] hover:bg-[#1D4ED8] text-white border-0"
+              onClick={runAIAnalysis}
+              disabled={analyzingAI}
+            >
+              {analyzingAI ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+              {analyzingAI ? "Analyzing..." : "AI Actions"}
+            </Button>
+          </div>
+        </div>
 
-          {/* Main content + AI rail */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-            <div className="space-y-6">
-              {/* Pipeline Overview */}
-              <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
+        {/* Tab Bar */}
+        <div className="flex gap-0 mt-3 -mb-4">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? "border-[#2563EB] text-[#2563EB]"
+                  : "border-transparent text-[#64748B] hover:text-[#1E293B]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-6 space-y-6">
+
+        {/* ── Overview Tab ── */}
+        {activeTab === "overview" && (
+          <>
+            {/* KPI Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <MetricCard
+                label="Active Roles"
+                value={stats.activeJobs}
+                trend="+6 this month"
+                trendUp
+                onClick={() => openModalFor("jobs")}
+                loading={loading}
+              />
+              <MetricCard
+                label="In Pipeline"
+                value={stats.totalCandidates}
+                sub="across all stages"
+                onClick={() => openModalFor("candidates")}
+                loading={loading}
+              />
+              <MetricCard
+                label="Placed This Month"
+                value={stats.thisMonthPlacements}
+                trend="+3 vs last month"
+                trendUp
+                onClick={() => openModalFor("hires")}
+                loading={loading}
+              />
+            </div>
+
+            {/* Middle row: Pipeline Funnel + Today's Tasks */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
+              {/* Pipeline Funnel */}
+              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-[15px] font-semibold text-[#1E293B]">Pipeline Overview</h2>
-                    <p className="text-[12px] text-[#94A3B8] mt-0.5">Recruitment funnel · All active positions</p>
-                  </div>
-                  <Link to={createPageUrl("Submissions")} className="text-[12px] text-[#2563EB] flex items-center gap-1 hover:underline">
-                    Full Pipeline <ArrowRight className="w-3 h-3" />
+                  <h2 className="text-[15px] font-semibold text-[#1E293B]">Pipeline Funnel</h2>
+                  <Link to={createPageUrl("Submissions")} className="text-[12px] text-[#2563EB] font-medium hover:underline">
+                    View All
                   </Link>
                 </div>
-                <div className="flex items-start gap-1 flex-wrap">
-                  {pipelineStages.map((stage, idx) => (
-                    <PipelineStage key={stage.label} {...stage} isLast={idx === pipelineStages.length - 1} />
-                  ))}
+                <div className="space-y-3">
+                  {loading
+                    ? Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-6 bg-slate-100 rounded animate-pulse" />)
+                    : pipelineStages.map(s => (
+                        <div key={s.label} className="flex items-center gap-3">
+                          <span className="w-20 text-[13px] text-[#475569] font-medium shrink-0">{s.label}</span>
+                          <div className="flex-1 h-2.5 bg-[#F1F5F9] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${Math.max(3, (s.count / pipelineMax) * 100)}%`, backgroundColor: PIPE_COLORS[s.label] || "#2563EB" }}
+                            />
+                          </div>
+                          <span className="w-8 text-right text-[13px] font-semibold text-[#1E293B]">{s.count}</span>
+                        </div>
+                      ))
+                  }
                 </div>
               </div>
 
-              {/* Tasks Today */}
-              <div className="bg-white border border-[#E2E8F0] rounded-lg">
+              {/* Today's Tasks */}
+              <div className="bg-white border border-[#E2E8F0] rounded-xl">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9]">
-                  <div>
-                    <h2 className="text-[15px] font-semibold text-[#1E293B]">Tasks Today</h2>
-                    <p className="text-[12px] text-[#94A3B8]">{myTasksToday.length} pending</p>
-                  </div>
-                  <Link to={createPageUrl("Tasks")}>
-                    <Button variant="outline" size="sm" className="text-[12px] border-[#E2E8F0] gap-1">
-                      View All <ArrowRight className="w-3 h-3" />
-                    </Button>
+                  <h2 className="text-[15px] font-semibold text-[#1E293B]">Today's Tasks</h2>
+                  <Link to={createPageUrl("Tasks")} className="flex items-center gap-1 text-[12px] text-[#2563EB] font-medium hover:underline">
+                    <Plus className="w-3.5 h-3.5" /> New
                   </Link>
                 </div>
-                {loading ? (
-                  <div className="p-5 space-y-3">
-                    {[1,2,3].map(i => <div key={i} className="h-12 bg-slate-100 rounded animate-pulse" />)}
-                  </div>
-                ) : myTasksToday.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <CheckCircle2 className="w-8 h-8 text-[#16A34A] mx-auto mb-2" />
-                    <p className="text-[13px] text-[#64748B]">No tasks due today. You're all caught up!</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-[#F1F5F9]">
-                    {myTasksToday.slice(0, 8).map(t => {
+                <div className="divide-y divide-[#F8FAFC]">
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-14 mx-5 my-2 bg-slate-100 rounded animate-pulse" />
+                    ))
+                  ) : myTasksToday.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <CheckCircle2 className="w-8 h-8 text-[#16A34A] mx-auto mb-2" />
+                      <p className="text-[13px] text-[#64748B]">All caught up!</p>
+                    </div>
+                  ) : (
+                    myTasksToday.slice(0, 6).map(t => {
                       const isOverdue = t.due_date && new Date(t.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
-                      const priorityDot = { urgent: "bg-[#DC2626]", high: "bg-[#D97706]", medium: "bg-[#2563EB]", low: "bg-[#94A3B8]" };
+                      const dueLabel = t.due_date
+                        ? `${isOverdue ? "Overdue · " : "Due "}${new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                        : null;
                       return (
-                        <div key={t.id} className="flex items-center gap-3 px-5 py-3 hover:bg-[#F8FAFC] group transition-colors">
+                        <div key={t.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-[#F8FAFC] transition-colors">
                           <button
                             onClick={() => completeTask(t.id)}
                             disabled={completingTask === t.id}
-                            className="w-4 h-4 rounded border-2 border-[#CBD5E1] hover:border-[#2563EB] flex items-center justify-center flex-shrink-0 transition-colors"
+                            className="mt-0.5 w-4 h-4 rounded-full border-2 border-[#CBD5E1] hover:border-[#2563EB] flex items-center justify-center flex-shrink-0 transition-colors"
                           >
                             {completingTask === t.id && <Loader2 className="w-2.5 h-2.5 animate-spin text-[#2563EB]" />}
                           </button>
-                          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${priorityDot[t.priority] || priorityDot.medium}`} />
                           <div className="flex-1 min-w-0">
-                            <p className={`text-[13px] font-medium truncate ${isOverdue ? "text-[#DC2626]" : "text-[#1E293B]"}`}>{t.title}</p>
-                            {t.due_date && (
-                              <p className={`text-[11px] ${isOverdue ? "text-[#DC2626]" : "text-[#94A3B8]"}`}>
-                                Due {new Date(t.due_date).toLocaleDateString()}
-                                {isOverdue && " · Overdue"}
+                            <p className="text-[13px] font-medium text-[#1E293B] leading-snug">{t.title}</p>
+                            {dueLabel && (
+                              <p className={`text-[11px] mt-0.5 font-medium ${isOverdue ? "text-[#DC2626]" : "text-[#94A3B8]"}`}>
+                                {dueLabel}
                               </p>
                             )}
                           </div>
-                          {t.related_entity && (
-                            <span className="text-[11px] text-[#94A3B8] hidden group-hover:inline capitalize">{t.related_entity.replace("_"," ")}</span>
-                          )}
                         </div>
                       );
-                    })}
-                  </div>
+                    })
+                  )}
+                  {!loading && myTasksToday.length > 6 && (
+                    <div className="px-5 py-3">
+                      <Link to={createPageUrl("Tasks")} className="text-[12px] text-[#2563EB] font-medium hover:underline">
+                        +{myTasksToday.length - 6} more tasks
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom row: Recent Candidates + AI Insights */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
+              {/* Recent Candidates */}
+              <div className="bg-white border border-[#E2E8F0] rounded-xl">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9]">
+                  <h2 className="text-[15px] font-semibold text-[#1E293B]">Recent Candidates</h2>
+                  <Link to={createPageUrl("Candidates")} className="text-[12px] text-[#2563EB] font-medium hover:underline">
+                    See All
+                  </Link>
+                </div>
+                {/* Table header */}
+                <div className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-2.5 bg-[#F8FAFC] border-b border-[#F1F5F9]">
+                  {["CANDIDATE", "ROLE", "SCORE", "STAGE", "APPLIED"].map(h => (
+                    <span key={h} className="text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider">{h}</span>
+                  ))}
+                </div>
+                {loading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-14 mx-5 my-2 bg-slate-100 rounded animate-pulse" />
+                  ))
+                ) : recentCandidates.length === 0 ? (
+                  <div className="p-8 text-center text-[13px] text-[#94A3B8]">No candidates yet</div>
+                ) : (
+                  recentCandidates.map(c => {
+                    const app = applications.find(a => a.candidate_id === c.id);
+                    const stage = app?.status || c.status || "active";
+                    const score = app?.match_score || c.screening_score;
+                    const color = avatarColor(`${c.first_name}${c.last_name}`);
+                    const pillClass = STAGE_PILL[stage] || "bg-[#F8FAFC] text-[#475569]";
+                    return (
+                      <div
+                        key={c.id}
+                        className="grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-3 items-center px-5 py-3 border-b border-[#F8FAFC] last:border-0 hover:bg-[#F8FAFC] transition-colors cursor-pointer"
+                        onClick={() => window.dispatchEvent(new CustomEvent("preview:open", { detail: { entity: "Candidate", id: c.id } }))}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${color}`}>
+                            {(c.first_name?.[0] || "")}{(c.last_name?.[0] || "")}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-medium text-[#1E293B] truncate">{c.first_name} {c.last_name}</p>
+                            {c.current_title && <p className="text-[11px] text-[#94A3B8] truncate">{c.current_title}</p>}
+                          </div>
+                        </div>
+                        <span className="text-[12px] text-[#475569] truncate">{c.current_title || "—"}</span>
+                        <span className={`text-[13px] font-semibold ${score ? (score >= 85 ? "text-[#16A34A]" : score >= 70 ? "text-[#D97706]" : "text-[#94A3B8]") : "text-[#CBD5E1]"}`}>
+                          {score ? `${Math.round(score)}%` : "—"}
+                        </span>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize inline-block ${pillClass}`}>
+                          {stage.replace(/_/g, " ")}
+                        </span>
+                        <span className="text-[12px] text-[#94A3B8]">{timeAgo(c.created_date)}</span>
+                      </div>
+                    );
+                  })
                 )}
               </div>
 
-              {/* Candidates by Status Chart */}
-              {!loading && statusChartData.length > 0 && (
-                <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
-                  <h2 className="text-[15px] font-semibold text-[#1E293B] mb-4">Candidates by Status</h2>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={statusChartData} barSize={28}>
-                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                        <Tooltip contentStyle={{ border: "1px solid #E2E8F0", borderRadius: 6, fontSize: 12 }} />
-                        <Bar dataKey="value" fill="#2563EB" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Custom Widgets */}
-              {widgets && widgets.length > 0 && (
-                isAdmin ? (
-                  <DragDropContext onDragEnd={onWidgetDragEnd}>
-                    <Droppable droppableId="dash-widgets" direction="horizontal">
-                      {(drop) => (
-                        <div ref={drop.innerRef} {...drop.droppableProps} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                          {widgets.map((w, idx) => (
-                            <Draggable key={w.id} draggableId={w.id} index={idx}>
-                              {(drag) => (
-                                <div ref={drag.innerRef} {...drag.draggableProps} {...drag.dragHandleProps}>
-                                  <WidgetRenderer widget={w} refreshKey={refreshKey} />
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {drop.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {widgets.map(w => <WidgetRenderer key={w.id} widget={w} refreshKey={refreshKey} />)}
-                  </div>
-                )
-              )}
-            </div>
-
-            {/* AI Insights Rail */}
-            <div className="space-y-4">
-              <div className="bg-white border border-[#E2E8F0] rounded-lg">
-                <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#F1F5F9]">
+              {/* AI Insights */}
+              <div className="bg-white border border-[#E2E8F0] rounded-xl">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9]">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-[14px] font-semibold text-[#1E293B]">AI Insights</h3>
-                    <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#16A34A] animate-pulse" />
-                      <span className="text-[11px] text-[#94A3B8]">Active</span>
-                    </div>
+                    <Zap className="w-4 h-4 text-[#2563EB]" />
+                    <h2 className="text-[15px] font-semibold text-[#1E293B]">AI Insights</h2>
+                    <div className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
                   </div>
-                  <Brain className="w-4 h-4 text-[#2563EB]" />
+                  <Button
+                    size="sm" variant="outline"
+                    onClick={runAIAnalysis}
+                    disabled={analyzingAI}
+                    className="h-7 text-[11px] border-[#E2E8F0] gap-1.5"
+                  >
+                    {analyzingAI ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
+                    {analyzingAI ? "Analyzing..." : "Refresh"}
+                  </Button>
                 </div>
-
-                <div className="p-4">
+                <div className="p-5">
                   {analyzingAI ? (
                     <div className="py-6 text-center">
                       <Loader2 className="w-6 h-6 animate-spin text-[#2563EB] mx-auto mb-2" />
                       <p className="text-[12px] text-[#64748B]">Analyzing pipeline...</p>
                     </div>
-                  ) : aiInsights?.insights ? (
-                    aiInsights.insights.map((ins, i) => {
-                      const map = insightTypeMap[ins.type] || insightTypeMap.info;
-                      return <AIInsightCard key={i} icon={map.icon} color={map.color} insight={ins.text} action={ins.action} />;
-                    })
                   ) : (
-                    <div className="space-y-0">
-                      <AIInsightCard icon={AlertTriangle} color="amber" insight="Click 'AI Insights' to analyze your pipeline and get personalized recommendations." action="Run Analysis" />
-                      <AIInsightCard icon={Users} color="blue" insight={`${candidates.filter(c=>c.status==="active").length} active candidates in your pipeline`} action="View Candidates" />
-                      <AIInsightCard icon={Briefcase} color="green" insight={`${stats.activeJobs} open positions currently recruiting`} action="View Jobs" />
-                      <AIInsightCard icon={TrendingUp} color="blue" insight={`${stats.thisMonthPlacements} placements made this month`} action="View Placements" />
-                    </div>
+                    <ul className="space-y-3">
+                      {(aiInsights?.insights?.length > 0 ? aiInsights.insights : [
+                        { text: `${candidates.filter(c => c.status === "active").length} candidates active in pipeline`, type: "info" },
+                        { text: `${stats.activeJobs} open positions currently recruiting`, type: "success" },
+                        { text: `${stats.thisMonthPlacements} placements made this month`, type: "info" },
+                        { text: "Click Refresh to generate personalized recommendations", type: "warning" },
+                      ]).map((ins, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-[13px] text-[#475569]">
+                          <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                            ins.type === "urgent" ? "bg-[#DC2626]" :
+                            ins.type === "warning" ? "bg-[#D97706]" :
+                            ins.type === "success" ? "bg-[#16A34A]" : "bg-[#2563EB]"
+                          }`} />
+                          <span className="leading-snug">{ins.text}</span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </div>
-
-                {aiInsights && (
-                  <div className="px-4 py-3 border-t border-[#F1F5F9]">
-                    <p className="text-[11px] text-[#94A3B8]">Last analyzed: just now</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Links */}
-              <div className="bg-white border border-[#E2E8F0] rounded-lg p-4">
-                <h3 className="text-[13px] font-semibold text-[#1E293B] mb-3">Quick Actions</h3>
-                <div className="space-y-1">
-                  {[
-                    { label: "Add Candidate", to: "Candidates", icon: Users },
-                    { label: "Post New Job", to: "Jobs", icon: Briefcase },
-                    { label: "Add Company", to: "Companies", icon: Building2 },
-                    { label: "Create Task", to: "Tasks", icon: CheckCircle2 },
-                  ].map(item => (
-                    <Link key={item.label} to={createPageUrl(item.to)} className="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-[#F8FAFC] text-[13px] text-[#475569] hover:text-[#1E293B] transition-colors group">
-                      <item.icon className="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB]" />
-                      {item.label}
-                      <ChevronRight className="w-3 h-3 ml-auto text-[#CBD5E1] group-hover:text-[#2563EB]" />
-                    </Link>
-                  ))}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      {activeTab === "pipeline" && (
-        <div className="bg-white border border-[#E2E8F0] rounded-lg p-6">
-          <h2 className="text-[15px] font-semibold text-[#1E293B] mb-4">Full Pipeline View</h2>
-          <div className="flex items-start gap-2 flex-wrap mb-8">
-            {pipelineStages.map((stage, idx) => (
-              <PipelineStage key={stage.label} {...stage} isLast={idx === pipelineStages.length - 1} />
-            ))}
-          </div>
-          <Link to={createPageUrl("Submissions")}>
-            <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px]">
-              Open Full Pipeline View <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
-          </Link>
-        </div>
-      )}
+            {/* Custom Widgets */}
+            {widgets && widgets.length > 0 && (
+              isAdmin ? (
+                <DragDropContext onDragEnd={onWidgetDragEnd}>
+                  <Droppable droppableId="dash-widgets" direction="horizontal">
+                    {(drop) => (
+                      <div ref={drop.innerRef} {...drop.droppableProps} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {widgets.map((w, idx) => (
+                          <Draggable key={w.id} draggableId={w.id} index={idx}>
+                            {(drag) => (
+                              <div ref={drag.innerRef} {...drag.draggableProps} {...drag.dragHandleProps}>
+                                <WidgetRenderer widget={w} refreshKey={refreshKey} />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {drop.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {widgets.map(w => <WidgetRenderer key={w.id} widget={w} refreshKey={refreshKey} />)}
+                </div>
+              )
+            )}
+          </>
+        )}
 
-      {activeTab === "activity" && (
-        <div className="bg-white border border-[#E2E8F0] rounded-lg p-6">
-          <h2 className="text-[15px] font-semibold text-[#1E293B] mb-4">Recent Activity</h2>
-          <div className="space-y-3">
-            {[...candidates].sort((a,b) => new Date(b.created_date)-new Date(a.created_date)).slice(0,10).map(c => (
-              <div key={c.id} className="flex items-center gap-3 py-2 border-b border-[#F1F5F9] last:border-0">
-                <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center text-[11px] font-semibold text-[#2563EB] flex-shrink-0">
-                  {c.first_name?.[0]}{c.last_name?.[0]}
-                </div>
-                <div>
-                  <p className="text-[13px] font-medium text-[#1E293B]">{c.first_name} {c.last_name} added</p>
-                  <p className="text-[11px] text-[#94A3B8]">{new Date(c.created_date).toLocaleDateString()}</p>
-                </div>
-                <Badge className="ml-auto text-[11px] bg-[#F0FDF4] text-[#16A34A] border-0">{c.status}</Badge>
+        {/* ── Pipeline Tab ── */}
+        {activeTab === "pipeline" && (
+          <div className="space-y-5">
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-6">
+              <h2 className="text-[15px] font-semibold text-[#1E293B] mb-5">Full Pipeline View</h2>
+              <div className="space-y-4 mb-8">
+                {pipelineStages.map(s => (
+                  <div key={s.label} className="flex items-center gap-4">
+                    <span className="w-24 text-[14px] text-[#475569] font-medium shrink-0">{s.label}</span>
+                    <div className="flex-1 h-3 bg-[#F1F5F9] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${Math.max(2, (s.count / pipelineMax) * 100)}%`, backgroundColor: PIPE_COLORS[s.label] || "#2563EB" }}
+                      />
+                    </div>
+                    <span className="w-10 text-right text-[14px] font-bold text-[#1E293B]">{s.count}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+              <Link to={createPageUrl("Submissions")}>
+                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px]">
+                  Open Full Pipeline View <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Candidates by Status chart */}
+            {!loading && statusChartData.length > 0 && (
+              <div className="bg-white border border-[#E2E8F0] rounded-xl p-6">
+                <h2 className="text-[15px] font-semibold text-[#1E293B] mb-4">Candidates by Status</h2>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={statusChartData} barSize={28}>
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <Tooltip contentStyle={{ border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12 }} />
+                      <Bar dataKey="value" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ── Activity Tab ── */}
+        {activeTab === "activity" && (
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-6">
+            <h2 className="text-[15px] font-semibold text-[#1E293B] mb-5">Recent Activity</h2>
+            <div className="space-y-1">
+              {[...candidates].sort((a,b) => new Date(b.created_date)-new Date(a.created_date)).slice(0,10).map(c => {
+                const color = avatarColor(`${c.first_name}${c.last_name}`);
+                return (
+                  <div key={c.id} className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#F8FAFC] transition-colors">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${color}`}>
+                      {c.first_name?.[0]}{c.last_name?.[0]}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[13px] font-medium text-[#1E293B]">{c.first_name} {c.last_name} <span className="font-normal text-[#64748B]">added to pipeline</span></p>
+                      <p className="text-[11px] text-[#94A3B8]">{timeAgo(c.created_date)}</p>
+                    </div>
+                    <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full capitalize ${STAGE_PILL[c.status] || "bg-[#F8FAFC] text-[#475569]"}`}>
+                      {c.status?.replace(/_/g," ")}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       <BuilderModal
         open={builderOpen}
