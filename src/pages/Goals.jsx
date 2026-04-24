@@ -211,11 +211,11 @@ export default function GoalsPage() {
       </div>
 
       <GoalForm
-        open={formOpen}
-        onClose={() => { setFormOpen(false); setEditingGoal(null); }}
-        goal={editingGoal}
-        recruiters={recruiters}
-        onSave={loadData}
+       open={formOpen}
+       onClose={() => { setFormOpen(false); setEditingGoal(null); }}
+       goal={editingGoal}
+       recruiters={recruiters}
+       onSave={loadData}
       />
 
       <DeleteConfirmModal
@@ -225,7 +225,8 @@ export default function GoalsPage() {
         title="Delete Goal"
         message="Are you sure you want to delete this goal? This action cannot be undone."
       />
-    </div>
+      </div>
+      </div>
   );
 }
 
@@ -397,7 +398,7 @@ function GoalForm({ open, onClose, goal, recruiters, onSave }) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving} className="clay-button">
+            <Button type="submit" disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {goal ? "Update Goal" : "Create Goal"}
             </Button>

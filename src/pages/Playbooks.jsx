@@ -157,42 +157,41 @@ export default function PlaybooksPage() {
       )}
 
       {/* Filters and Sort */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-500" />
-              <span className="text-sm font-medium text-slate-700">Filter:</span>
-              {categories.map((cat) => (
-                <Button
-                  key={cat.value}
-                  variant={filterCategory === cat.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterCategory(cat.value)}
-                  className="text-xs"
-                >
-                  {cat.label}
-                </Button>
-              ))}
-            </div>
-
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-sm text-slate-600">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm border border-slate-200 rounded px-2 py-1"
+      <div style={{ padding: "20px 24px", background: "#fff", borderRadius: "12px", marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,.05)" }}>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-500" />
+            <span className="text-sm font-medium text-slate-700">Filter:</span>
+            {categories.map((cat) => (
+              <Button
+                key={cat.value}
+                variant={filterCategory === cat.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterCategory(cat.value)}
+                className="text-xs"
               >
-                <option value="recent">Most Recent</option>
-                <option value="popular">Most Popular</option>
-                <option value="rating">Highest Rated</option>
-              </select>
-            </div>
+                {cat.label}
+              </Button>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-sm text-slate-600">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="text-sm border border-slate-200 rounded px-2 py-1"
+            >
+              <option value="recent">Most Recent</option>
+              <option value="popular">Most Popular</option>
+              <option value="rating">Highest Rated</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
       {/* Playbooks Grid */}
+      <div style={{ padding: "0 24px" }}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {sortedPlaybooks.map((playbook) => (
           <Card key={playbook.id} className="hover:shadow-xl transition-shadow">
@@ -276,24 +275,23 @@ export default function PlaybooksPage() {
       </div>
 
       {sortedPlaybooks.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              {filterCategory === "all" 
-                ? "No playbooks yet" 
-                : `No playbooks in ${filterCategory.replace(/_/g, " ")}`}
-            </h3>
-            <p className="text-slate-600 mb-6">
-              Create your first playbook to document your recruitment processes
-            </p>
-            <Button onClick={() => setShowForm(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Create Playbook
-            </Button>
-          </CardContent>
-        </Card>
+        <div style={{ background: "#fff", borderRadius: "12px", padding: "48px 24px", textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,.05)" }}>
+          <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            {filterCategory === "all" 
+              ? "No playbooks yet" 
+              : `No playbooks in ${filterCategory.replace(/_/g, " ")}`}
+          </h3>
+          <p className="text-slate-600 mb-6">
+            Create your first playbook to document your recruitment processes
+          </p>
+          <Button onClick={() => setShowForm(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Create Playbook
+          </Button>
+        </div>
       )}
+      </div>
 
       {/* Playbook Form Modal */}
       {showForm && (
