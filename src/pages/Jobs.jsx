@@ -698,17 +698,13 @@ export default function JobsPage() {
           })}
         </div>
 
-        {/* Pagination */}
-        {!loading && allStatusFiltered.length > rowsPerPage && (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:14, fontSize:13, color:"#86868B" }}>
-            <span>Showing {startIndex+1}–{Math.min(startIndex+rowsPerPage, allStatusFiltered.length)} of {allStatusFiltered.length}</span>
-            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <button onClick={()=>goToPage(currentPage-1)} disabled={currentPage===1}
-                style={{ padding:"5px 12px", borderRadius:20, border:"1px solid #E5E5EA", background:"#fff", color:currentPage===1?"#AEAEB2":"#1D1D1F", cursor:currentPage===1?"default":"pointer", fontSize:13 }}>← Prev</button>
-              <span style={{ fontSize:12 }}>Page {currentPage} of {totalStatusPages}</span>
-              <button onClick={()=>goToPage(currentPage+1)} disabled={currentPage>=totalStatusPages}
-                style={{ padding:"5px 12px", borderRadius:20, border:"1px solid #E5E5EA", background:"#fff", color:currentPage>=totalStatusPages?"#AEAEB2":"#1D1D1F", cursor:currentPage>=totalStatusPages?"default":"pointer", fontSize:13 }}>Next →</button>
-            </div>
+        {/* Load More button */}
+        {!loading && currentPage < totalStatusPages && (
+          <div style={{ display:"flex", justifyContent:"center", marginTop:24, marginBottom:20 }}>
+            <button onClick={()=>goToPage(currentPage+1)}
+              style={{ padding:"8px 24px", borderRadius:20, border:"1px solid #E5E5EA", background:"#fff", color:"#0071E3", cursor:"pointer", fontSize:13, fontWeight:600, boxShadow:"0 1px 4px rgba(0,0,0,.08)" }}>
+              Load More
+            </button>
           </div>
         )}
       </div>
