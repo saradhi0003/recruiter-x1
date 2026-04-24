@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -350,487 +349,214 @@ function SubmissionsPageContent() {
     }
   };
 
+  // ── Derived metrics ──
+  const openRoles = jobs.filter(j => j.status === "open").length;
+  const filledThisMonth = (() => {
+    const now = new Date();
+    return submissions.filter(s => s.status === "hired" && new Date(s.submitted_date || s.created_date).getMonth() === now.getMonth() && new Date(s.submitted_date || s.created_date).getFullYear() === now.getFullYear()).length;
+  })();
+  const pipelineDepth = submissions.filter(s => !["rejected","withdrawn","hired"].includes(s.status)).length;
+  const avgFillDays = (() => {
+    const hired = submissions.filter(s => s.status === "hired" && s.submitted_date);
+    if (!hired.length) return null;
+    const avg = hired.reduce((sum, s) => sum + Math.floor((Date.now() - new Date(s.submitted_date)) / 86400000), 0) / hired.length;
+    return Math.round(avg);
+  })();
+
   return (
-    <div className="p-6 lg:p-8 space-y-6 relative">
-      <PageHeader
-        title="Applications"
-        subtitle={`Track candidate applications and submissions (past 1 month)`}
-        right={
-          <PermissionGate entity="Submission" action="create">
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-2 bg-white text-blue-700 hover:bg-slate-50" onClick={() => loadSubmissions()}>
-                <RefreshCcw className="w-4 h-4" />
-                Refresh
-              </Button>
-              <Button onClick={() => { setShowForm(true); setFormSubmission(null); setSelectedSubmission(null); setHighlightedSubmission(null); }} className="gap-2 bg-white text-blue-700 hover:bg-slate-50">
-                <Plus className="w-4 h-4" />
-                New Application
-              </Button>
-            </div>
-          </PermissionGate>
-        }
-      />
+    <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background: "#F5F5F7", minHeight: "100vh" }}>
 
-      {highlightedSubmission && (
-        <Card className="border-2 border-blue-500 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center text-lg font-semibold">
-                  <Send className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">
-                    {getHighlightedCandidateName()}
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <div className="flex items-center gap-1">
-                      <Briefcase className="w-4 h-4" />
-                      {getHighlightedJobTitle()}
-                    </div>
-                    {highlightedSubmission.submitted_date && (
-                      <>
-                        <span>•</span>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(highlightedSubmission.submitted_date).toLocaleDateString()}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" onClick={closeHighlightPanel}>
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <div className="mb-4">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                Quick Status Update
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {statusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updateHighlightedField("status", option.value)}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all font-medium text-sm ${
-                      currentStatus === option.value
-                        ? option.color + " shadow-sm"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 pt-4 border-t">
-              <Button
-                onClick={saveHighlightedChanges}
-                disabled={savingHighlighted || Object.keys(highlightedChanges).length === 0}
-                className="gap-2"
-              >
-                {savingHighlighted ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Save Changes
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowForm(true);
-                  setFormSubmission(highlightedSubmission);
-                  closeHighlightPanel();
-                }}
-                className="gap-2"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Full Submission
-              </Button>
-              {Object.keys(highlightedChanges).length > 0 && (
-                <Badge className="ml-auto bg-orange-100 text-orange-800">
-                  {Object.keys(highlightedChanges).length} unsaved change{Object.keys(highlightedChanges).length > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Total Applications</p>
-                <p className="text-2xl font-bold text-slate-900">{submissions.length}</p>
-              </div>
-              <Send className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Under Review</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {submissions.filter(s => s.status === "under_review").length}
-                </p>
-              </div>
-              <Eye className="w-8 h-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Interviewing</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {submissions.filter(s => s.status === "interviewing").length}
-                </p>
-              </div>
-              <User className="w-8 h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Hired</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {submissions.filter(s => s.status === "hired").length}
-                </p>
-              </div>
-              <CheckSquare className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── Metrics bar ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", background: "#fff", borderBottom: "1px solid #E5E5EA" }}>
+        {[
+          { label: "Open Roles",        value: loading ? "—" : openRoles,      sub: "actively hiring",    valColor: "#1D1D1F" },
+          { label: "Filled This Month", value: loading ? "—" : filledThisMonth, sub: `+${filledThisMonth} vs last`, subColor: "#30A14E", valColor: "#30A14E" },
+          { label: "Avg Time to Fill",  value: loading ? "—" : (avgFillDays != null ? avgFillDays + "d" : "—"), sub: "days", valColor: "#1D1D1F" },
+          { label: "Pipeline Depth",    value: loading ? "—" : pipelineDepth,  sub: "active candidates",  valColor: "#0071E3" },
+        ].map((m, i) => (
+          <div key={i} style={{ padding: "22px 28px", borderRight: i < 3 ? "1px solid #E5E5EA" : "none" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 500, color: "#86868B", marginBottom: 5 }}>{m.label}</div>
+            <div style={{ fontSize: 42, fontWeight: 700, letterSpacing: "-.04em", lineHeight: 1, color: m.valColor || "#1D1D1F" }}>{m.value}</div>
+            <div style={{ fontSize: 11.5, color: m.subColor || "#86868B", marginTop: 6 }}>{m.sub}</div>
+          </div>
+        ))}
       </div>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                variant={viewType === "list" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewType("list")}
-              >
-                List
-              </Button>
-              <Button
-                variant={viewType === "kanban" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewType("kanban")}
-              >
-                Kanban
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 flex-1 max-w-2xl">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <Input
-                  placeholder="Search applications..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="submitted">Submitted</SelectItem>
-                  <SelectItem value="under_review">Under Review</SelectItem>
-                  <SelectItem value="interviewing">Interviewing</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="hired">Hired</SelectItem>
-                  <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="icon" onClick={() => setShowViewSettings(true)}>
-                <Settings className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* ── Toolbar ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 24px", background: "#fff", borderBottom: "1px solid #E5E5EA", flexWrap: "wrap" }}>
+        {/* View toggle */}
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#86868B", marginRight: 2 }}>View</span>
+        {["kanban","list"].map(v => (
+          <button key={v} onClick={() => setViewType(v)}
+            style={{ padding: "5px 14px", borderRadius: 20, fontSize: 13, fontWeight: viewType === v ? 600 : 500, border: "none", cursor: "pointer", background: viewType === v ? "#1D1D1F" : "#fff", color: viewType === v ? "#fff" : "#6E6E73", boxShadow: viewType === v ? "none" : "0 1px 4px rgba(0,0,0,.08),0 0 0 .5px rgba(0,0,0,.06)", textTransform: "capitalize" }}>
+            {v === "kanban" ? "Kanban" : "List"}
+          </button>
+        ))}
 
-      {viewType === "list" && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-600">
-            Showing {paginatedSubmissions.length === 0 ? 0 : startIndex + 1}-{startIndex + paginatedSubmissions.length} of {filteredAndSortedSubmissions.length} submissions
-          </p>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-600">Rows per page:</span>
-            <select
-              value={rowsPerPage}
-              onChange={(e) => handleRowsPerPageChange(e.target.value)}
-              className="border border-slate-200 rounded px-3 py-1.5 text-sm bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="500">500</option>
-            </select>
-          </div>
+        <div style={{ width: 1, height: 20, background: "#E5E5EA", margin: "0 4px" }} />
+
+        {/* Status filter pills */}
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#86868B", marginRight: 2 }}>Status</span>
+        {[{k:"all",l:"All"},{k:"submitted",l:"Submitted"},{k:"under_review",l:"Screening"},{k:"interviewing",l:"Interviewing"},{k:"offered",l:"Offer"},{k:"hired",l:"Hired"},{k:"rejected",l:"Rejected"}].map(s => (
+          <button key={s.k} onClick={() => { setStatusFilter(s.k); setCurrentPage(1); }}
+            style={{ padding: "5px 13px", borderRadius: 20, fontSize: 13, fontWeight: statusFilter === s.k ? 600 : 500, border: "none", cursor: "pointer", background: statusFilter === s.k ? "#1D1D1F" : "#fff", color: statusFilter === s.k ? "#fff" : "#6E6E73", boxShadow: statusFilter === s.k ? "none" : "0 1px 4px rgba(0,0,0,.08),0 0 0 .5px rgba(0,0,0,.06)", transition: "all 120ms" }}>
+            {s.l}
+          </button>
+        ))}
+
+        {/* Search */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(0,0,0,.06)", borderRadius: 10, padding: "5px 10px", marginLeft: 8 }}>
+          <Search style={{ width: 13, height: 13, color: "#86868B" }} />
+          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search applications…"
+            style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1D1D1F", width: 160 }} />
+        </div>
+
+        {/* Right actions */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={() => loadSubmissions()} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500, border: "1px solid #E5E5EA", background: "#fff", color: "#6E6E73", cursor: "pointer" }}>
+            Refresh
+          </button>
+          <PermissionGate entity="Submission" action="create">
+            <button onClick={() => { setShowForm(true); setFormSubmission(null); setSelectedSubmission(null); setHighlightedSubmission(null); }}
+              style={{ padding: "7px 18px", borderRadius: 20, fontSize: 13, fontWeight: 600, border: "none", background: "#0071E3", color: "#fff", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,113,227,.3)" }}>
+              + Post Role
+            </button>
+          </PermissionGate>
+        </div>
+      </div>
+
+      {/* ── Quick edit floating bar ── */}
+      {highlightedSubmission && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "#1D1D1F", borderRadius: 16, padding: "14px 20px", boxShadow: "0 8px 32px rgba(0,0,0,.28)", display: "flex", alignItems: "center", gap: 10, zIndex: 50, flexWrap: "wrap" }}>
+          <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{getHighlightedCandidateName()}</div>
+          <div style={{ color: "rgba(255,255,255,.4)", fontSize: 12 }}>→ {getHighlightedJobTitle()}</div>
+          <div style={{ width: 1, height: 18, background: "rgba(255,255,255,.15)" }} />
+          {statusOptions.map(o => (
+            <button key={o.value} onClick={() => updateHighlightedField("status", o.value)}
+              style={{ padding: "4px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", background: currentStatus === o.value ? "#0071E3" : "rgba(255,255,255,.12)", color: "#fff" }}>
+              {o.label}
+            </button>
+          ))}
+          <div style={{ width: 1, height: 18, background: "rgba(255,255,255,.15)" }} />
+          <button onClick={saveHighlightedChanges} disabled={savingHighlighted || Object.keys(highlightedChanges).length === 0}
+            style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", background: "#30A14E", color: "#fff", opacity: Object.keys(highlightedChanges).length === 0 ? .5 : 1 }}>
+            {savingHighlighted ? "Saving…" : "Save"}
+          </button>
+          <button onClick={closeHighlightPanel} style={{ background: "none", border: "none", color: "rgba(255,255,255,.5)", cursor: "pointer", fontSize: 16 }}>✕</button>
         </div>
       )}
+
+      {/* ── Content area ── */}
+      <div style={{ padding: "20px 24px 60px" }}>
 
       {viewType === "kanban" ? (
         <KanbanBoard
           submissions={filteredAndSortedSubmissions}
           candidates={candidates}
           jobs={jobs}
+          companies={companies}
           onSubmissionClick={setSelectedSubmission}
           onRefresh={loadSubmissions}
+          onAddNew={() => { setShowForm(true); setFormSubmission(null); }}
         />
       ) : viewType === "list" && loading ? (
-        <div className="p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-slate-600">Loading applications...</p>
+        <div style={{ padding: 48, textAlign: "center", color: "#86868B" }}>
+          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" style={{ color: "#0071E3" }} />
+          <div style={{ fontSize: 13 }}>Loading applications…</div>
         </div>
       ) : viewType === "list" && paginatedSubmissions.length > 0 ? (
         <>
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-50 border-b">
-                    <tr>
-                      <th className="px-4 py-3 text-left">
-                        <Checkbox
-                          checked={allVisibleSelected}
-                          className={someVisibleSelected ? "data-[state=checked]:bg-primary" : ""}
-                          onCheckedChange={(checked) => toggleSelectAllVisible(!!checked)}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-left">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs px-2"
-                        >
-                          <Zap className="w-3 h-3 mr-1" />
-                          Quick Edit
-                        </Button>
-                      </th>
-                      {visibleColumns.filter(c => c.visible).map(col => (
-                        <th
-                          key={col.key}
-                          className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-slate-100"
-                          onClick={() => handleSort(col.key)}
-                        >
-                          <div className="flex items-center gap-1">
-                            {col.label}
-                            {sortBy === col.key && (
-                              sortOrder === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            )}
-                          </div>
-                        </th>
-                      ))}
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {paginatedSubmissions.map(submission => {
-                      const candidate = candidates.find(c => c.id === submission.candidate_id);
-                      const job = jobs.find(j => j.id === submission.job_id);
-                      return (
-                        <tr
-                          key={submission.id}
-                          className={`hover:bg-slate-50 transition-colors cursor-pointer ${
-                            highlightedSubmission?.id === submission.id ? "bg-blue-50" : ""
-                          }`}
-                          onClick={() => setSelectedSubmission(submission)}
-                        >
-                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={selectedIds.has(submission.id)}
-                              onCheckedChange={() => toggleSelect(submission.id)}
-                            />
-                          </td>
-                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleHighlightSubmission(submission)}
-                              className="h-8 text-xs"
-                            >
-                              <Zap className="w-3 h-3 mr-1" />
-                              Quick Edit
-                            </Button>
-                          </td>
-                          {visibleColumns.filter(c => c.visible).map(col => {
-                            const value = submission[col.key];
-                            return (
-                              <td key={col.key} className="px-4 py-3 text-sm text-slate-700">
-                                {col.key === "candidate_id" && candidate ? (
-                                  `${candidate.first_name} ${candidate.last_name}`
-                                ) : col.key === "job_id" && job ? (
-                                  job.title
-                                ) : col.key === "status" ? (
-                                  <Badge className={getStatusColor(value)}>
-                                    {value?.replace("_", " ")}
-                                  </Badge>
-                                ) : col.key === "submitted_date" && value ? (
-                                  new Date(value).toLocaleDateString()
-                                ) : (
-                                  value || "—"
-                                )}
-                              </td>
-                            );
-                          })}
-                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setSelectedSubmission(submission)}>
-                                  <Eye className="w-4 h-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                {can("Submission", "update") && (
-                                  <DropdownMenuItem onClick={() => { setFormSubmission(submission); setShowForm(true); }}>
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                )}
-                                {can("Submission", "delete") && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteSubmission(submission.id)}
-                                      className="text-red-600"
-                                    >
-                                      <Trash2 className="w-4 h-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-600">
-                Page {currentPage} of {totalPages}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(1)}
-                  disabled={currentPage === 1}
-                  className="gap-1"
-                >
-                  <ChevronsLeft className="w-4 h-4" />
-                  First
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
-                </Button>
-                
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    
-                    if (pageNum < 1 || pageNum > totalPages) return null; // Avoid invalid page numbers
-                    
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => goToPage(pageNum)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
+          <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,.07),0 0 0 .5px rgba(0,0,0,.05)", overflow: "hidden" }}>
+            {/* Table header */}
+            <div style={{ display: "grid", gridTemplateColumns: "40px 1.8fr 1.4fr 120px 120px 120px 36px", padding: "9px 20px", borderBottom: "1px solid #E5E5EA", background: "#FAFAFA" }}>
+              {["", "CANDIDATE", "JOB", "STATUS", "SUBMITTED", "MATCH", ""].map((h, i) => (
+                <div key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".04em", color: "#86868B", display: "flex", alignItems: "center", gap: i === 0 ? 0 : 0 }}>
+                  {i === 0 ? <Checkbox checked={allVisibleSelected} onCheckedChange={c => toggleSelectAllVisible(!!c)} /> : h}
                 </div>
+              ))}
+            </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => goToPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                  className="gap-1"
-                >
-                  Last
-                  <ChevronsRight className="w-4 h-4" />
-                </Button>
+            {paginatedSubmissions.map((submission, idx) => {
+              const candidate = candidates.find(c => c.id === submission.candidate_id);
+              const job = jobs.find(j => j.id === submission.job_id);
+              const company = companies.find(c => c.id === job?.company_id);
+              const candName = candidate ? `${candidate.first_name} ${candidate.last_name}` : "Unknown";
+              const sb = { submitted:{bg:"rgba(59,130,246,.12)",c:"#2563EB"}, under_review:{bg:"rgba(245,158,11,.12)",c:"#D97706"}, interviewing:{bg:"rgba(139,92,246,.12)",c:"#7C3AED"}, offered:{bg:"rgba(16,185,129,.12)",c:"#059669"}, hired:{bg:"rgba(48,161,78,.12)",c:"#16A34A"}, rejected:{bg:"rgba(239,68,68,.12)",c:"#DC2626"}, withdrawn:{bg:"rgba(107,114,128,.12)",c:"#6B7280"} }[submission.status] || {bg:"rgba(0,0,0,.06)",c:"#86868B"};
+              const avatarPalette = ["#3B82F6,#6366F1","#F59E0B,#EA580C","#8B5CF6,#7C3AED","#10B981,#059669","#EF4444,#DC2626"];
+              const p = avatarPalette[(candName?.charCodeAt(0)||0) % avatarPalette.length].split(",");
+              const grad = `linear-gradient(135deg,${p[0]},${p[1]})`;
+              const ini = candName.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+
+              return (
+                <div key={submission.id} onClick={() => setSelectedSubmission(submission)}
+                  style={{ display: "grid", gridTemplateColumns: "40px 1.8fr 1.4fr 120px 120px 120px 36px", padding: "10px 20px", borderBottom: idx < paginatedSubmissions.length - 1 ? "1px solid #F2F2F7" : "none", alignItems: "center", cursor: "pointer", background: highlightedSubmission?.id === submission.id ? "rgba(0,113,227,.04)" : "transparent", transition: "background 100ms" }}
+                  onMouseEnter={e => { if (highlightedSubmission?.id !== submission.id) e.currentTarget.style.background = "#F9F9FB"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = highlightedSubmission?.id === submission.id ? "rgba(0,113,227,.04)" : "transparent"; }}>
+                  <div onClick={e => e.stopPropagation()}>
+                    <Checkbox checked={selectedIds.has(submission.id)} onCheckedChange={() => toggleSelect(submission.id)} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: grad, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{ini}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1D1D1F", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{candName}</div>
+                      <div style={{ fontSize: 11.5, color: "#86868B" }}>{candidate?.current_title || candidate?.email || "—"}</div>
+                    </div>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: "#1D1D1F", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{job?.title || "—"}</div>
+                    <div style={{ fontSize: 11.5, color: "#86868B" }}>{company?.name || job?.hiring_manager || "—"}</div>
+                  </div>
+                  <div><span style={{ fontSize: 11.5, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: sb.bg, color: sb.c }}>{(submission.status||"").replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase())}</span></div>
+                  <div style={{ fontSize: 12, color: "#86868B" }}>{submission.submitted_date ? new Date(submission.submitted_date).toLocaleDateString() : "—"}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: submission.match_score != null ? "#0071E3" : "#AEAEB2" }}>{submission.match_score != null ? submission.match_score : "—"}</div>
+                  <div onClick={e => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", cursor: "pointer", color: "#86868B" }} className="hover:bg-black/[.07]">
+                          <MoreVertical style={{ width: 14, height: 14 }} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setSelectedSubmission(submission)}><Eye className="w-4 h-4 mr-2"/>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleHighlightSubmission(submission)}><Zap className="w-4 h-4 mr-2"/>Quick Edit</DropdownMenuItem>
+                        {can("Submission","update") && <DropdownMenuItem onClick={() => { setFormSubmission(submission); setShowForm(true); }}><Edit className="w-4 h-4 mr-2"/>Edit</DropdownMenuItem>}
+                        {can("Submission","delete") && <><DropdownMenuSeparator /><DropdownMenuItem onClick={() => handleDeleteSubmission(submission.id)} className="text-red-600"><Trash2 className="w-4 h-4 mr-2"/>Delete</DropdownMenuItem></>}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 13, color: "#86868B" }}>
+              <span>Showing {startIndex + 1}–{Math.min(startIndex + rowsPerPage, filteredAndSortedSubmissions.length)} of {filteredAndSortedSubmissions.length}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}
+                  style={{ padding: "5px 12px", borderRadius: 20, border: "1px solid #E5E5EA", background: "#fff", color: currentPage === 1 ? "#AEAEB2" : "#1D1D1F", cursor: currentPage === 1 ? "default" : "pointer", fontSize: 13 }}>← Prev</button>
+                <span style={{ fontSize: 12 }}>Page {currentPage} of {totalPages}</span>
+                <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= totalPages}
+                  style={{ padding: "5px 12px", borderRadius: 20, border: "1px solid #E5E5EA", background: "#fff", color: currentPage >= totalPages ? "#AEAEB2" : "#1D1D1F", cursor: currentPage >= totalPages ? "default" : "pointer", fontSize: 13 }}>Next →</button>
               </div>
             </div>
           )}
         </>
       ) : (
-        <div className="p-12 text-center">
-          <Send className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-          <h3 className="font-semibold text-slate-900 mb-2">No applications found</h3>
-          <p className="text-slate-600 mb-4">
-            {searchTerm || statusFilter !== "all" 
-              ? "Try adjusting your search or filters" 
-              : "No submissions in the past month"}
-          </p>
+        <div style={{ padding: 60, textAlign: "center" }}>
+          <Send style={{ width: 36, height: 36, color: "#AEAEB2", margin: "0 auto 12px" }} />
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#1D1D1F", marginBottom: 6 }}>No applications found</div>
+          <div style={{ fontSize: 13, color: "#86868B", marginBottom: 16 }}>{searchTerm || statusFilter !== "all" ? "Try adjusting your search or filters" : "No submissions in the past month"}</div>
           <PermissionGate entity="Submission" action="create">
-            <Button onClick={() => { setShowForm(true); setFormSubmission(null); }} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Submit New Application
-            </Button>
+            <button onClick={() => { setShowForm(true); setFormSubmission(null); }} style={{ padding: "8px 20px", borderRadius: 20, fontSize: 13, fontWeight: 600, border: "none", background: "#0071E3", color: "#fff", cursor: "pointer" }}>
+              + New Application
+            </button>
           </PermissionGate>
         </div>
       )}
+
+      </div>{/* end content area */}
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
