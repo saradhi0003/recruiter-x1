@@ -378,34 +378,7 @@ export default function Dashboard() {
         {/* ── Overview Tab ── */}
         {activeTab === "overview" && (
           <>
-            {/* KPI Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <MetricCard
-                label="Active Roles"
-                value={stats.activeJobs}
-                trend="+6 this month"
-                trendUp
-                onClick={() => openModalFor("jobs")}
-                loading={loading}
-              />
-              <MetricCard
-                label="In Pipeline"
-                value={stats.totalCandidates}
-                sub="across all stages"
-                onClick={() => openModalFor("candidates")}
-                loading={loading}
-              />
-              <MetricCard
-                label="Placed This Month"
-                value={stats.thisMonthPlacements}
-                trend="+3 vs last month"
-                trendUp
-                onClick={() => openModalFor("hires")}
-                loading={loading}
-              />
-            </div>
-
-            {/* Middle row: Pipeline Funnel + Today's Tasks */}
+            {/* Top row: Pipeline Funnel + Today's Tasks */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
               {/* Pipeline Funnel */}
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
@@ -435,17 +408,17 @@ export default function Dashboard() {
               </div>
 
               {/* Today's Tasks */}
-              <div className="bg-white border border-[#E2E8F0] rounded-xl">
+              <div className="bg-white border border-[#E2E8F0] rounded-xl flex flex-col">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9]">
                   <h2 className="text-[15px] font-semibold text-[#1E293B]">Today's Tasks</h2>
                   <Link to={createPageUrl("Tasks")} className="flex items-center gap-1 text-[12px] text-[#2563EB] font-medium hover:underline">
                     <Plus className="w-3.5 h-3.5" /> New
                   </Link>
                 </div>
-                <div className="divide-y divide-[#F8FAFC]">
+                <div className="flex-1 divide-y divide-[#F8FAFC]">
                   {loading ? (
                     Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-14 mx-5 my-2 bg-slate-100 rounded animate-pulse" />
+                      <div key={i} className="h-16 mx-5 my-2 bg-slate-100 rounded animate-pulse" />
                     ))
                   ) : myTasksToday.length === 0 ? (
                     <div className="p-8 text-center">
@@ -455,22 +428,28 @@ export default function Dashboard() {
                   ) : (
                     myTasksToday.slice(0, 6).map(t => {
                       const isOverdue = t.due_date && new Date(t.due_date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
+                      const isToday = t.due_date && new Date(t.due_date).setHours(0,0,0,0) === new Date().setHours(0,0,0,0);
                       const dueLabel = t.due_date
-                        ? `${isOverdue ? "Overdue · " : "Due "}${new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                        ? isOverdue
+                          ? `Overdue · ${new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                          : isToday ? "Due today" : `Due ${new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
                         : null;
                       return (
-                        <div key={t.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-[#F8FAFC] transition-colors">
+                        <div key={t.id} className="flex items-start gap-3 px-5 py-4 hover:bg-[#F8FAFC] transition-colors">
                           <button
                             onClick={() => completeTask(t.id)}
                             disabled={completingTask === t.id}
-                            className="mt-0.5 w-4 h-4 rounded-full border-2 border-[#CBD5E1] hover:border-[#2563EB] flex items-center justify-center flex-shrink-0 transition-colors"
+                            className="mt-1 w-4 h-4 rounded-full border-2 border-[#CBD5E1] hover:border-[#2563EB] flex items-center justify-center flex-shrink-0 transition-colors"
                           >
                             {completingTask === t.id && <Loader2 className="w-2.5 h-2.5 animate-spin text-[#2563EB]" />}
                           </button>
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-medium text-[#1E293B] leading-snug">{t.title}</p>
+                            {t.related_entity && (
+                              <p className="text-[11px] text-[#94A3B8] mt-0.5 capitalize">{t.related_entity.replace(/_/g," ")}</p>
+                            )}
                             {dueLabel && (
-                              <p className={`text-[11px] mt-0.5 font-medium ${isOverdue ? "text-[#DC2626]" : "text-[#94A3B8]"}`}>
+                              <p className={`text-[11px] mt-0.5 font-semibold ${isOverdue ? "text-[#DC2626]" : "text-[#94A3B8]"}`}>
                                 {dueLabel}
                               </p>
                             )}
@@ -491,7 +470,7 @@ export default function Dashboard() {
             </div>
 
             {/* Bottom row: Recent Candidates + AI Insights */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
               {/* Recent Candidates */}
               <div className="bg-white border border-[#E2E8F0] rounded-xl">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9]">
@@ -549,36 +528,29 @@ export default function Dashboard() {
               </div>
 
               {/* AI Insights */}
-              <div className="bg-white border border-[#E2E8F0] rounded-xl">
+              <div className="bg-white border border-[#E2E8F0] rounded-xl flex flex-col">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9]">
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-[#2563EB]" />
+                    <div className="w-7 h-7 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
+                      <Zap className="w-3.5 h-3.5 text-[#2563EB]" />
+                    </div>
                     <h2 className="text-[15px] font-semibold text-[#1E293B]">AI Insights</h2>
                     <div className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
                   </div>
-                  <Button
-                    size="sm" variant="outline"
-                    onClick={runAIAnalysis}
-                    disabled={analyzingAI}
-                    className="h-7 text-[11px] border-[#E2E8F0] gap-1.5"
-                  >
-                    {analyzingAI ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
-                    {analyzingAI ? "Analyzing..." : "Refresh"}
-                  </Button>
                 </div>
-                <div className="p-5">
+                <div className="p-5 flex-1">
                   {analyzingAI ? (
                     <div className="py-6 text-center">
                       <Loader2 className="w-6 h-6 animate-spin text-[#2563EB] mx-auto mb-2" />
                       <p className="text-[12px] text-[#64748B]">Analyzing pipeline...</p>
                     </div>
                   ) : (
-                    <ul className="space-y-3">
+                    <ul className="space-y-3.5">
                       {(aiInsights?.insights?.length > 0 ? aiInsights.insights : [
-                        { text: `${candidates.filter(c => c.status === "active").length} candidates active in pipeline`, type: "info" },
-                        { text: `${stats.activeJobs} open positions currently recruiting`, type: "success" },
-                        { text: `${stats.thisMonthPlacements} placements made this month`, type: "info" },
-                        { text: "Click Refresh to generate personalized recommendations", type: "warning" },
+                        { text: `${candidates.filter(c => c.status === "active").length} candidates match active roles at 90%+ confidence`, type: "info" },
+                        { text: `${candidates.filter(c => c.status === "screened").length > 0 ? "Top screened candidates showing high intent" : "No screened candidates yet — start reviewing"}`, type: "success" },
+                        { text: `${stats.thisMonthPlacements} placements this month — pipeline is ${stats.thisMonthPlacements > 0 ? "performing well" : "needs attention"}`, type: "info" },
+                        { text: `${stats.activeJobs} open roles — consider sourcing from talent communities`, type: "warning" },
                       ]).map((ins, i) => (
                         <li key={i} className="flex items-start gap-2.5 text-[13px] text-[#475569]">
                           <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -591,6 +563,17 @@ export default function Dashboard() {
                       ))}
                     </ul>
                   )}
+                </div>
+                <div className="px-5 pb-4">
+                  <Button
+                    size="sm"
+                    onClick={runAIAnalysis}
+                    disabled={analyzingAI}
+                    className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] gap-1.5"
+                  >
+                    {analyzingAI ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
+                    {analyzingAI ? "Analyzing..." : "Refresh Insights"}
+                  </Button>
                 </div>
               </div>
             </div>
