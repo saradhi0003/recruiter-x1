@@ -683,7 +683,7 @@ export default function Candidates() {
         </div>
 
         {/* Load More button */}
-        {!loading && currentPage < totalStagePages && (
+        {!loading && stageFilteredCandidates.length > rowsPerPage && currentPage < totalStagePages && (
           <div style={{ display:"flex", justifyContent:"center", marginTop:24, marginBottom:20 }}>
             <button onClick={()=>goToPage(currentPage+1)}
               style={{ padding:"8px 24px", borderRadius:20, border:"1px solid #E5E5EA", background:"#fff", color:"#0071E3", cursor:"pointer", fontSize:13, fontWeight:600, boxShadow:"0 1px 4px rgba(0,0,0,.08)" }}>
