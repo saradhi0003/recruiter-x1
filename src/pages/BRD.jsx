@@ -1,1299 +1,1248 @@
-
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  FileText,
-  Target,
-  Users,
-  Zap,
-  Shield,
-  Database,
-  GitBranch,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  MailPlus,
-  Brain,
-  BookOpen,
-  List,
-  Code, // Added Code icon for API reference
-  Briefcase, // Added Briefcase icon for Jobs API
-  Send, // Added Send icon for Applications API
-  CheckCircle, // Existing icon
-  TrendingUp // Existing icon
+  FileText, Target, Users, Zap, Shield, Database, GitBranch,
+  Search, ChevronDown, ChevronUp, Sparkles, MailPlus, Brain,
+  BookOpen, List, Code, Briefcase, Send, CheckCircle, TrendingUp,
+  Layers, Server, Lock, Activity, Settings, Globe, Bot, BarChart2,
+  Cpu, AlertTriangle, ArrowRight, Box, Key
 } from "lucide-react";
-import PageHeader from "@/components/common/PageHeader";
-import Breadcrumbs from "@/components/common/Breadcrumbs";
 
-const EntityCard = ({ entity, expanded, onToggle }) => {
-  const getFieldTypeColor = (type) => {
-    const colors = {
-      string: "bg-blue-100 text-blue-800",
-      number: "bg-green-100 text-green-800",
-      boolean: "bg-purple-100 text-purple-800",
-      array: "bg-orange-100 text-orange-800",
-      object: "bg-pink-100 text-pink-800",
-      date: "bg-cyan-100 text-cyan-800"
-    };
-    return colors[type] || "bg-gray-100 text-gray-800";
-  };
+// ── Mini Components ──────────────────────────────────────────────────────────
 
+function Section({ id, icon: Icon, title, badge, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <Card className="border-l-4 border-l-blue-500">
-      <CardHeader className="cursor-pointer hover:bg-slate-50" onClick={onToggle}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Database className="w-5 h-5 text-blue-600" />
-            <CardTitle className="text-lg">{entity.name}</CardTitle>
-            <Badge variant="outline">{entity.fields.length} fields</Badge>
+    <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-white">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-6 py-4 hover:bg-[#F8FAFC] transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
+            <Icon className="w-4 h-4 text-[#2563EB]" />
           </div>
-          {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          <span className="font-semibold text-[#1E293B] text-[15px]">{title}</span>
+          {badge && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#7C3AED] text-white uppercase tracking-wider">{badge}</span>}
         </div>
-        {entity.description && (
-          <p className="text-sm text-slate-600 mt-2">{entity.description}</p>
-        )}
-      </CardHeader>
-      
-      {expanded && (
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="font-semibold text-sm mb-3">Fields</h4>
-            <div className="space-y-2">
-              {entity.fields.map((field, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-2 rounded border bg-slate-50">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-sm font-medium">{field.name}</span>
-                      <Badge className={getFieldTypeColor(field.type)} variant="secondary">
-                        {field.type}
-                      </Badge>
-                      {field.required && (
-                        <Badge className="bg-red-100 text-red-800">required</Badge>
-                      )}
-                      {field.isLookup && (
-                        <Badge className="bg-indigo-100 text-indigo-800">→ {field.references}</Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-600">{field.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {open ? <ChevronUp className="w-4 h-4 text-[#94A3B8]" /> : <ChevronDown className="w-4 h-4 text-[#94A3B8]" />}
+      </button>
+      {open && <div className="px-6 pb-6 pt-2 border-t border-[#F1F5F9]">{children}</div>}
+    </div>
+  );
+}
 
-          {entity.relationships?.length > 0 && (
+function InfoCard({ color = "blue", title, children, className = "" }) {
+  const colors = {
+    blue: "border-l-[#2563EB] bg-[#EFF6FF]",
+    purple: "border-l-[#7C3AED] bg-[#F5F3FF]",
+    green: "border-l-[#16A34A] bg-[#F0FDF4]",
+    orange: "border-l-[#D97706] bg-[#FFFBEB]",
+    red: "border-l-[#DC2626] bg-[#FEF2F2]",
+    slate: "border-l-[#475569] bg-[#F8FAFC]",
+    pink: "border-l-[#DB2777] bg-[#FDF2F8]",
+  };
+  return (
+    <div className={`border-l-4 rounded-r-lg p-4 ${colors[color]} ${className}`}>
+      {title && <p className="font-semibold text-[13px] mb-2">{title}</p>}
+      <div className="text-[13px] space-y-1">{children}</div>
+    </div>
+  );
+}
+
+function FieldRow({ name, type, required, isLookup, references, description }) {
+  const typeColors = {
+    string: "bg-blue-100 text-blue-800", number: "bg-green-100 text-green-800",
+    boolean: "bg-purple-100 text-purple-800", array: "bg-orange-100 text-orange-800",
+    object: "bg-pink-100 text-pink-800", date: "bg-cyan-100 text-cyan-800",
+  };
+  return (
+    <div className="flex items-start gap-3 p-2.5 rounded-lg bg-[#F8FAFC] border border-[#F1F5F9] text-[12px]">
+      <code className="font-mono font-semibold text-[#1E293B] min-w-[160px] shrink-0">{name}</code>
+      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${typeColors[type] || "bg-gray-100 text-gray-800"}`}>{type}</span>
+      {required && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-800">required</span>}
+      {isLookup && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-800">→ {references}</span>}
+      <span className="text-[#64748B] flex-1">{description}</span>
+    </div>
+  );
+}
+
+function EntityBlock({ name, description, fields = [], relationships = [] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F8FAFC] text-left">
+        <div className="flex items-center gap-3">
+          <Database className="w-4 h-4 text-[#2563EB]" />
+          <span className="font-semibold text-[14px] text-[#1E293B]">{name}</span>
+          <span className="text-[11px] text-[#94A3B8] border border-[#E2E8F0] rounded px-1.5 py-0.5">{fields.length} fields</span>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-[#94A3B8]" /> : <ChevronDown className="w-4 h-4 text-[#94A3B8]" />}
+      </button>
+      {open && (
+        <div className="px-4 pb-4 border-t border-[#F1F5F9] space-y-3 pt-3">
+          {description && <p className="text-[13px] text-[#64748B]">{description}</p>}
+          <div className="space-y-1.5">
+            {fields.map((f, i) => <FieldRow key={i} {...f} />)}
+          </div>
+          {relationships.length > 0 && (
             <div>
-              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <GitBranch className="w-4 h-4" />
-                Relationships
-              </h4>
-              <div className="space-y-2">
-                {entity.relationships.map((rel, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-sm p-2 bg-blue-50 rounded">
-                    <span className="font-medium">{rel.type}:</span>
-                    <span>{rel.with}</span>
-                    <span className="text-slate-500">({rel.description})</span>
+              <p className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider mb-2">Relationships</p>
+              <div className="space-y-1">
+                {relationships.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[12px] bg-[#EFF6FF] rounded px-3 py-1.5">
+                    <span className="font-medium text-[#2563EB]">{r.type}</span>
+                    <ArrowRight className="w-3 h-3 text-[#94A3B8]" />
+                    <span className="text-[#1E293B]">{r.with}</span>
+                    <span className="text-[#64748B]">({r.description})</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          <div className="bg-slate-100 rounded p-3">
-            <p className="text-xs text-slate-600 mb-2">
-              <strong>Built-in fields (auto-generated):</strong>
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="text-xs">id</Badge>
-              <Badge variant="outline" className="text-xs">created_date</Badge>
-              <Badge variant="outline" className="text-xs">updated_date</Badge>
-              <Badge variant="outline" className="text-xs">created_by</Badge>
-            </div>
+          <div className="bg-[#F8FAFC] rounded p-2 flex flex-wrap gap-1.5">
+            <span className="text-[10px] text-[#94A3B8] mr-1 self-center">Auto fields:</span>
+            {["id", "created_date", "updated_date", "created_by"].map(f => (
+              <code key={f} className="text-[10px] border border-[#E2E8F0] bg-white rounded px-1.5 py-0.5">{f}</code>
+            ))}
           </div>
-        </CardContent>
+        </div>
       )}
-    </Card>
+    </div>
   );
+}
+
+function CodeBlock({ code, language = "javascript" }) {
+  return (
+    <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-xl p-4 overflow-x-auto text-[11px] leading-relaxed font-mono">
+      {code}
+    </pre>
+  );
+}
+
+function LayerCard({ icon: Icon, color, title, items }) {
+  return (
+    <div className={`border-l-4 ${color} bg-white border border-[#E2E8F0] rounded-r-xl p-4`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className="w-4 h-4 text-[#2563EB]" />
+        <p className="font-semibold text-[13px] text-[#1E293B]">{title}</p>
+      </div>
+      <ul className="space-y-1">
+        {items.map((item, i) => (
+          <li key={i} className="text-[12px] text-[#475569] flex items-start gap-2">
+            <span className="text-[#94A3B8] mt-0.5">•</span>{item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const entities = {
+  core: [
+    {
+      name: "Candidate", description: "Core entity representing job seekers, consultants, and bench talent in the recruitment pipeline.",
+      fields: [
+        { name: "first_name", type: "string", required: true, description: "First name" },
+        { name: "last_name", type: "string", required: true, description: "Last name" },
+        { name: "email", type: "string", required: true, description: "Email address" },
+        { name: "phone", type: "string", description: "Phone number" },
+        { name: "location", type: "string", description: "Current location" },
+        { name: "linkedin_url", type: "string", description: "LinkedIn profile URL" },
+        { name: "resume_url", type: "string", description: "Resume file URL (Base44 storage)" },
+        { name: "skills", type: "array", description: "Technical and professional skills array" },
+        { name: "experience_years", type: "number", description: "Total years of professional experience" },
+        { name: "current_title", type: "string", description: "Current or most recent job title" },
+        { name: "current_company", type: "string", description: "Current or most recent employer" },
+        { name: "salary_expectation", type: "number", description: "Desired compensation" },
+        { name: "availability", type: "string", description: "Availability (immediately | 2_weeks | 1_month | negotiable)" },
+        { name: "status", type: "string", description: "Pipeline status: active | on_bench | our_bench | placed | inactive | do_not_contact | screened" },
+        { name: "work_authorization", type: "string", description: "Work auth: citizen | permanent_resident | h1b | opt | other" },
+        { name: "notes", type: "string", description: "Internal recruiter notes" },
+        { name: "source", type: "string", description: "Sourcing channel (LinkedIn, referral, etc.)" },
+        { name: "tags", type: "array", description: "Categorization tags" },
+        { name: "bench_match_score", type: "number", description: "AI bulk bench score (0–100), persisted from BulkBenchScorer" },
+        { name: "bench_score_details", type: "object", description: "Detailed AI scoring breakdown from bench scoring run" },
+        { name: "screening_score", type: "number", description: "AI screening fit score (0–100) from CandidateScreening" },
+        { name: "screening_date", type: "date", description: "Timestamp when screening was last performed" },
+        { name: "screening_details", type: "object", description: "Detailed AI analysis: matching/missing qualifications, overall fit" },
+        { name: "benchSalesRecruiterId", type: "string", description: "Linked bench sales recruiter user ID" },
+        { name: "consultantVisaStatus", type: "string", description: "Consultant visa status picklist" },
+        { name: "exclusiveCandidate", type: "boolean", description: "Exclusive representation flag" },
+        { name: "archive", type: "boolean", description: "Archived (soft delete) flag" },
+      ],
+      relationships: [
+        { type: "One-to-Many", with: "Application", description: "Candidates have multiple job applications" },
+        { type: "One-to-Many", with: "Submission", description: "Candidates are submitted to multiple jobs" },
+        { type: "One-to-Many", with: "Resume", description: "Candidates have versioned resumes" },
+        { type: "One-to-Many", with: "OutreachMessage", description: "Candidates receive outreach messages" },
+        { type: "One-to-Many", with: "InterviewSession", description: "Candidates are interviewed for jobs" },
+        { type: "One-to-Many", with: "MatchFeedback", description: "AI match results tracked per candidate" },
+      ]
+    },
+    {
+      name: "Job", description: "Job openings and requirements from client companies. Drives the core matching and submission workflow.",
+      fields: [
+        { name: "title", type: "string", required: true, description: "Job title" },
+        { name: "company_id", type: "string", required: true, isLookup: true, references: "Company", description: "Hiring company" },
+        { name: "description", type: "string", description: "Full job description (HTML or text)" },
+        { name: "requirements", type: "string", description: "Required qualifications" },
+        { name: "location", type: "string", description: "Job location" },
+        { name: "remote_type", type: "string", description: "Work arrangement: onsite | remote | hybrid" },
+        { name: "employment_type", type: "string", description: "full_time | part_time | contract | contract_to_hire" },
+        { name: "rate", type: "string", description: "Rate or salary (free text, e.g. '$120k–$150k')" },
+        { name: "priority", type: "string", description: "Urgency: low | medium | high | urgent" },
+        { name: "status", type: "string", description: "Lifecycle: draft | open | on_hold | filled | cancelled" },
+        { name: "required_skills", type: "array", description: "Must-have technical skills" },
+        { name: "preferred_skills", type: "array", description: "Nice-to-have skills" },
+        { name: "experience_required", type: "number", description: "Minimum years of experience" },
+        { name: "positions_available", type: "number", description: "Headcount to fill" },
+        { name: "hiring_manager", type: "string", description: "Client hiring manager name" },
+        { name: "due_date", type: "date", description: "Target fill date" },
+        { name: "requester_email", type: "string", description: "Original requester email (parsed from inbound email)" },
+        { name: "requester_name", type: "string", description: "Original requester name" },
+        { name: "visa_restrictions", type: "string", description: "Work auth / visa notes from JD" },
+        { name: "contract_type", type: "string", description: "Engagement model: c2c | w2 | 1099 | unknown" },
+        { name: "salary_text", type: "string", description: "Raw salary text as found in JD" },
+      ],
+      relationships: [
+        { type: "Many-to-One", with: "Company", description: "Jobs belong to a company" },
+        { type: "One-to-Many", with: "Application", description: "Jobs have multiple candidate applications" },
+        { type: "One-to-Many", with: "Submission", description: "Jobs receive multiple recruiter submissions" },
+        { type: "One-to-One", with: "JobStack", description: "Open jobs may be cloned to public job board" },
+      ]
+    },
+    {
+      name: "Company", description: "Client companies and connections. CRM-style entity with contacts and job access controls.",
+      fields: [
+        { name: "name", type: "string", required: true, description: "Company name" },
+        { name: "industry", type: "string", description: "Industry sector" },
+        { name: "website", type: "string", description: "Company website URL" },
+        { name: "location", type: "string", description: "Primary office location" },
+        { name: "description", type: "string", description: "Company overview" },
+        { name: "type", type: "string", description: "client | internal" },
+        { name: "status", type: "string", description: "active | prospect | inactive" },
+        { name: "contacts", type: "array", description: "Array of {name, email, phone, title, is_primary}" },
+        { name: "job_stack_access", type: "boolean", description: "Contacts receive Job Stack email notifications" },
+        { name: "primary_phone", type: "string", description: "Primary contact phone (import helper)" },
+      ],
+      relationships: [
+        { type: "One-to-Many", with: "Job", description: "Companies have multiple job openings" },
+        { type: "One-to-Many", with: "Invoice", description: "Companies receive invoices" },
+        { type: "One-to-Many", with: "Recruiter", description: "Company can have associated recruiters" },
+      ]
+    },
+    {
+      name: "Application", description: "Candidate applications to specific jobs. Core pipeline tracking entity.",
+      fields: [
+        { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate" },
+        { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Target job" },
+        { name: "status", type: "string", description: "Pipeline stage: sourced | applied | screening | submitted | interviewing | offered | hired | rejected | withdrawn" },
+        { name: "stage_updated_date", type: "date", description: "Timestamp of last status change" },
+        { name: "notes", type: "string", description: "Internal recruiter notes" },
+        { name: "interview_dates", type: "array", description: "Array of {date, type, interviewer, notes, feedback}" },
+        { name: "submitted_by", type: "string", description: "Submitting recruiter email" },
+        { name: "client_feedback", type: "string", description: "Client/hiring manager feedback" },
+        { name: "rejection_reason", type: "string", description: "Reason for rejection if applicable" },
+        { name: "match_score", type: "number", description: "AI-generated match score (0–100)" },
+        { name: "score_details", type: "object", description: "Full AI scoring breakdown: dimensions, strengths, concerns, recommendation" },
+      ],
+      relationships: [
+        { type: "Many-to-One", with: "Candidate", description: "Application belongs to a candidate" },
+        { type: "Many-to-One", with: "Job", description: "Application is for a specific job" },
+      ]
+    },
+  ],
+  recruitment: [
+    {
+      name: "Submission", description: "Recruiter-initiated submissions of candidates to client jobs. Tracks follow-up and interview workflow.",
+      fields: [
+        { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate" },
+        { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Target job" },
+        { name: "recruiter_id", type: "string", required: true, description: "Submitting recruiter ID" },
+        { name: "submitted_date", type: "date", description: "Submission timestamp" },
+        { name: "status", type: "string", description: "submitted | under_review | interviewing | rejected | hired | withdrawn" },
+        { name: "client_feedback", type: "string", description: "Feedback from client" },
+        { name: "follow_up_date", type: "date", description: "Next follow-up date" },
+        { name: "follow_up_completed", type: "boolean", description: "Follow-up completion flag" },
+        { name: "interview_dates", type: "array", description: "Interview history with date, type, interviewer, feedback" },
+        { name: "rate", type: "string", description: "Submitted rate (text)" },
+        { name: "client", type: "string", description: "Client company name (denormalized)" },
+        { name: "vendorName", type: "string", description: "Vendor/agency name" },
+        { name: "technologyText", type: "string", description: "Technology stack text" },
+      ],
+      relationships: [
+        { type: "Many-to-One", with: "Candidate", description: "Submission is for a candidate" },
+        { type: "Many-to-One", with: "Job", description: "Submission is for a job" },
+      ]
+    },
+    {
+      name: "Recruiter", description: "Internal and external recruiters. Performance tracking and territory management.",
+      fields: [
+        { name: "first_name", type: "string", required: true, description: "First name" },
+        { name: "last_name", type: "string", required: true, description: "Last name" },
+        { name: "email", type: "string", required: true, description: "Email" },
+        { name: "phone", type: "string", description: "Phone" },
+        { name: "company_id", type: "string", isLookup: true, references: "Company", description: "Associated company" },
+        { name: "role", type: "string", description: "internal | external | freelance" },
+        { name: "specializations", type: "array", description: "Recruiting specializations (e.g. Java, DevOps)" },
+        { name: "territory", type: "string", description: "Geographic territory" },
+        { name: "performance_metrics", type: "object", description: "placements_this_month, placements_this_year, revenue_generated" },
+        { name: "commission_rate", type: "number", description: "Commission percentage" },
+        { name: "status", type: "string", description: "active | inactive | on_leave" },
+        { name: "is_marketing", type: "boolean", description: "Receives job marketing email blasts" },
+      ],
+      relationships: [
+        { type: "One-to-Many", with: "Submission", description: "Recruiters create submissions" },
+        { type: "One-to-Many", with: "Goal", description: "Recruiters have performance goals" },
+        { type: "One-to-Many", with: "Timesheet", description: "Recruiters log time" },
+        { type: "One-to-Many", with: "LeaveRequest", description: "Recruiters request leave" },
+      ]
+    },
+    {
+      name: "Resume", description: "Structured resume data for candidates. Supports versioning and AI-assisted building.",
+      fields: [
+        { name: "candidate_id", type: "string", isLookup: true, references: "Candidate", description: "Linked candidate" },
+        { name: "name", type: "string", required: true, description: "Full display name" },
+        { name: "headline", type: "string", description: "Short professional headline" },
+        { name: "email", type: "string", description: "Contact email" },
+        { name: "phone", type: "string", description: "Contact phone" },
+        { name: "location", type: "string", description: "City, State" },
+        { name: "summary", type: "string", description: "Professional summary paragraph" },
+        { name: "experiences", type: "array", description: "Work history: [{company, role, start_date, end_date, bullets[]}]" },
+        { name: "education", type: "array", description: "Education: [{school, degree, major, gpa, start_date, end_date}]" },
+        { name: "projects", type: "array", description: "Projects: [{name, date, description[]}]" },
+        { name: "skills", type: "array", description: "Skills keyword array" },
+        { name: "theme_color", type: "string", description: "Accent color hex for resume preview" },
+      ],
+      relationships: [{ type: "Many-to-One", with: "Candidate", description: "Resume belongs to candidate" }]
+    },
+    {
+      name: "OutreachMessage", description: "Tracks all communication with candidates across channels.",
+      fields: [
+        { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Target candidate" },
+        { name: "job_id", type: "string", isLookup: true, references: "Job", description: "Related job (optional)" },
+        { name: "subject", type: "string", required: true, description: "Email subject" },
+        { name: "message", type: "string", required: true, description: "Message body" },
+        { name: "message_type", type: "string", description: "Type of outreach (initial, follow_up, offer, etc.)" },
+        { name: "channel", type: "string", description: "email | linkedin | phone | sms" },
+        { name: "status", type: "string", description: "draft | sent | delivered | opened | replied" },
+        { name: "response_received", type: "boolean", description: "Response flag" },
+        { name: "sentiment", type: "string", description: "AI-classified response sentiment: positive | neutral | negative" },
+      ],
+      relationships: [
+        { type: "Many-to-One", with: "Candidate", description: "Outreach to candidate" },
+        { type: "Many-to-One", with: "Job", description: "Related job" },
+      ]
+    },
+    {
+      name: "InterviewSession", description: "Interview scheduling, question tracking, scoring, and AI summaries.",
+      fields: [
+        { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate interviewed" },
+        { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Job being interviewed for" },
+        { name: "interview_date", type: "date", required: true, description: "Interview date/time" },
+        { name: "interview_type", type: "string", required: true, description: "phone_screen | technical | behavioral | panel | final" },
+        { name: "interviewer", type: "string", description: "Interviewer name or email" },
+        { name: "status", type: "string", description: "scheduled | completed | cancelled | no_show" },
+        { name: "questions", type: "array", description: "Array of {question, category, response, score}" },
+        { name: "overall_score", type: "number", description: "Calculated overall interview score (0–100)" },
+        { name: "recommendation", type: "string", description: "Hiring recommendation text" },
+        { name: "ai_summary", type: "string", description: "AI-generated interview summary and evaluation" },
+      ],
+      relationships: [
+        { type: "Many-to-One", with: "Candidate", description: "Interview with candidate" },
+        { type: "Many-to-One", with: "Job", description: "Interview for job" },
+      ]
+    },
+  ],
+  workflow: [
+    {
+      name: "Task", description: "Work items and follow-ups. Polymorphically links to any entity. Supports kanban and list views.",
+      fields: [
+        { name: "title", type: "string", required: true, description: "Task title" },
+        { name: "description", type: "string", description: "Detailed description" },
+        { name: "assigned_to", type: "string", required: true, description: "Assigned user email" },
+        { name: "related_entity", type: "string", description: "Linked entity type: candidate | job | company | submission | general" },
+        { name: "related_id", type: "string", description: "ID of linked entity record" },
+        { name: "priority", type: "string", description: "low | medium | high | urgent" },
+        { name: "status", type: "string", description: "pending | in_progress | completed | cancelled" },
+        { name: "due_date", type: "date", description: "Task due date" },
+        { name: "completion_notes", type: "string", description: "Notes added on completion" },
+        { name: "tags", type: "array", description: "Tags for organization" },
+      ],
+      relationships: [{ type: "Polymorphic", with: "Candidate | Job | Company | Submission", description: "Links to any entity via related_entity + related_id" }]
+    },
+    {
+      name: "Playbook", description: "Process documentation, best practices, and step-by-step guides. Supports AI-assisted smart search.",
+      fields: [
+        { name: "title", type: "string", required: true, description: "Playbook title" },
+        { name: "description", type: "string", description: "Overview description" },
+        { name: "category", type: "string", required: true, description: "onboarding | recruiting | client_management | procedures | templates | best_practices | interview_guides | compliance" },
+        { name: "subcategory", type: "string", description: "Finer categorization" },
+        { name: "documents", type: "array", description: "Linked docs: [{name, url, description, type}]" },
+        { name: "steps", type: "array", description: "Process steps: [{title, description, order, checklist[], tips}]" },
+        { name: "tags", type: "array", description: "Organizational tags" },
+        { name: "keywords", type: "array", description: "AI search keywords" },
+        { name: "usage_count", type: "number", description: "View count" },
+        { name: "is_active", type: "boolean", description: "Active/published flag" },
+        { name: "access_level", type: "string", description: "public | recruiter | manager | admin" },
+        { name: "faqs", type: "array", description: "FAQ entries: [{question, answer}]" },
+        { name: "version", type: "string", description: "Version number (e.g., '1.0')" },
+      ],
+      relationships: []
+    },
+    {
+      name: "AutomationRule", description: "Event-driven workflow rules. Executes email sends or task creation on entity status transitions.",
+      fields: [
+        { name: "name", type: "string", required: true, description: "Rule name" },
+        { name: "trigger_type", type: "string", required: true, description: "status_change | time_based | manual" },
+        { name: "trigger_entity", type: "string", required: true, description: "Watching entity: Submission | Application | Task | Candidate" },
+        { name: "trigger_status_from", type: "string", description: "Source status (any if omitted)" },
+        { name: "trigger_status_to", type: "string", description: "Target status that fires the rule" },
+        { name: "delay_minutes", type: "number", description: "Delay before executing action (browser setTimeout in current impl)" },
+        { name: "action_type", type: "string", required: true, description: "send_email | create_task | send_notification" },
+        { name: "email_template_id", type: "string", isLookup: true, references: "EmailTemplate", description: "Email template to use" },
+        { name: "email_recipient_type", type: "string", description: "Recipient: candidate | recruiter | hiring_manager | custom" },
+        { name: "email_custom_recipient", type: "string", description: "Custom email recipient address" },
+        { name: "is_active", type: "boolean", description: "Rule enabled flag" },
+        { name: "trigger_count", type: "number", description: "Total executions counter" },
+        { name: "last_triggered", type: "date", description: "Last execution timestamp" },
+      ],
+      relationships: [{ type: "Many-to-One", with: "EmailTemplate", description: "Uses email template for send actions" }]
+    },
+    {
+      name: "Goal", description: "Recruiter performance goals with progress tracking.",
+      fields: [
+        { name: "title", type: "string", required: true, description: "Goal title" },
+        { name: "description", type: "string", description: "Detailed goal description" },
+        { name: "recruiter_id", type: "string", required: true, description: "Assigned recruiter ID" },
+        { name: "start_date", type: "date", required: true, description: "Goal start date" },
+        { name: "end_date", type: "date", required: true, description: "Goal end date" },
+        { name: "status", type: "string", description: "draft | active | completed | on_hold | cancelled" },
+        { name: "progress", type: "number", description: "Progress percentage (0–100)" },
+      ],
+      relationships: [{ type: "Many-to-One", with: "Recruiter", description: "Goal assigned to recruiter" }]
+    },
+  ],
+  ai: [
+    {
+      name: "MatchingProfile", description: "Configurable AI matching profiles with weighted criteria, model selection, and learning from feedback.",
+      fields: [
+        { name: "name", type: "string", required: true, description: "Profile name (e.g., 'Senior Engineer Match')" },
+        { name: "job_id", type: "string", isLookup: true, references: "Job", description: "Optional specific job link" },
+        { name: "job_type", type: "string", required: true, description: "technical | sales | marketing | operations | executive | general" },
+        { name: "criteria_weights", type: "object", description: "Dimension weights summing to 100: {technical_skills, experience_years, role_seniority, domain_expertise, soft_skills, education, location_fit}" },
+        { name: "required_skills", type: "array", description: "Skills with importance: [{skill, importance: must_have|preferred|nice_to_have, min_years}]" },
+        { name: "soft_skills_keywords", type: "array", description: "Keywords to extract from profiles (e.g. 'leadership', 'autonomous')" },
+        { name: "experience_range", type: "object", description: "{min_years, max_years, ideal_years}" },
+        { name: "seniority_levels", type: "array", description: "Acceptable levels: intern | junior | mid | senior | lead | principal | executive" },
+        { name: "ai_model", type: "string", description: "Model selection: o1 | claude-4.5 | gpt-5 | gpt-4o | auto" },
+        { name: "matching_strategy", type: "string", description: "balanced | strict | lenient | learning" },
+        { name: "learning_enabled", type: "boolean", description: "Adapt weights from feedback" },
+        { name: "feedback_count", type: "number", description: "Total feedback entries received" },
+        { name: "avg_feedback_score", type: "number", description: "Average user rating (0–5)" },
+        { name: "performance_metrics", type: "object", description: "{total_matches, accepted_matches, rejected_matches, accuracy}" },
+        { name: "is_active", type: "boolean", description: "Active profile flag" },
+        { name: "is_default", type: "boolean", description: "Default profile for this user" },
+      ],
+      relationships: [{ type: "One-to-Many", with: "MatchFeedback", description: "Profile collects feedback entries" }]
+    },
+    {
+      name: "MatchFeedback", description: "User feedback on AI match quality for continuous learning and profile improvement.",
+      fields: [
+        { name: "matching_profile_id", type: "string", isLookup: true, references: "MatchingProfile", description: "Profile used for match" },
+        { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Matched candidate" },
+        { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Matched job" },
+        { name: "match_score", type: "number", required: true, description: "AI-generated score (0–100)" },
+        { name: "match_details", type: "object", description: "Full scoring breakdown from AI" },
+        { name: "user_rating", type: "number", description: "User star rating (1–5)" },
+        { name: "user_action", type: "string", description: "viewed | contacted | interviewed | hired | rejected | skipped" },
+        { name: "feedback_text", type: "string", description: "Free-text feedback on match quality" },
+        { name: "criteria_accuracy", type: "object", description: "Per-dimension accuracy flags: {technical_skills_accurate, experience_accurate, soft_skills_accurate, overall_fit_accurate}" },
+        { name: "suggested_improvements", type: "string", description: "User suggestions for improving matching" },
+        { name: "ai_model_used", type: "string", description: "Model used for this match run" },
+        { name: "was_helpful", type: "boolean", description: "Overall helpfulness flag" },
+      ],
+      relationships: [
+        { type: "Many-to-One", with: "MatchingProfile", description: "Feedback tied to matching profile" },
+        { type: "Many-to-One", with: "Candidate", description: "Feedback on candidate" },
+        { type: "Many-to-One", with: "Job", description: "Feedback for job" },
+      ]
+    },
+  ],
+  admin: [
+    {
+      name: "User", description: "System users with roles, permissions, and access state.",
+      fields: [
+        { name: "email", type: "string", description: "Email address (built-in, read-only)" },
+        { name: "full_name", type: "string", description: "Full name (built-in, read-only)" },
+        { name: "role", type: "string", description: "Built-in role: admin | user" },
+        { name: "role_id", type: "string", isLookup: true, references: "Role", description: "Custom role lookup (overrides built-in for permissions)" },
+        { name: "status", type: "string", description: "active | inactive | invited" },
+        { name: "is_locked", type: "boolean", description: "Account locked – forced logout on next load" },
+        { name: "last_active", type: "date", description: "Last activity timestamp" },
+      ],
+      relationships: [{ type: "Many-to-One", with: "Role", description: "User has a custom role" }]
+    },
+    {
+      name: "Role", description: "Permission roles defining entity-level access control matrix.",
+      fields: [
+        { name: "name", type: "string", required: true, description: "Role display name (e.g. Admin, Recruiter)" },
+        { name: "description", type: "string", description: "Role description" },
+        { name: "permissions", type: "object", required: true, description: "Map of entity → {view, create, update, delete, scope: all|own}" },
+      ],
+      relationships: [{ type: "One-to-Many", with: "User", description: "Role assigned to users" }]
+    },
+    {
+      name: "AuditLog", description: "System audit trail for login events and key user actions.",
+      fields: [
+        { name: "user_email", type: "string", required: true, description: "Acting user email" },
+        { name: "action", type: "string", required: true, description: "Action performed (e.g. 'login', 'update_status')" },
+        { name: "ip", type: "string", description: "IP address (fetched via ipify)" },
+        { name: "user_agent", type: "string", description: "Browser user agent string" },
+        { name: "meta", type: "object", description: "Additional metadata (entity type, record ID, etc.)" },
+      ],
+      relationships: []
+    },
+    {
+      name: "EmailTemplate", description: "Reusable email templates for automation rules, candidate outreach, and invoices.",
+      fields: [
+        { name: "title", type: "string", required: true, description: "Template title" },
+        { name: "subject", type: "string", description: "Email subject line" },
+        { name: "category", type: "string", description: "candidate_outreach | job_marketing | invoice | follow_up | internal_announcement | custom" },
+        { name: "blocks", type: "array", description: "Structured content blocks for email builder" },
+        { name: "html_body", type: "string", description: "Rendered HTML for sending" },
+        { name: "preview_text", type: "string", description: "Preview text for email clients" },
+        { name: "tags", type: "array", description: "Searchable tags" },
+        { name: "is_active", type: "boolean", description: "Active/published flag" },
+      ],
+      relationships: [{ type: "One-to-Many", with: "AutomationRule", description: "Templates used by automation rules" }]
+    },
+    {
+      name: "AppSettings", description: "Application-level configuration. Email provider settings gate all email functionality.",
+      fields: [
+        { name: "email_provider", type: "string", required: true, description: "none | gmail | outlook" },
+        { name: "provider_connected", type: "boolean", description: "OAuth connection confirmed – enables email features" },
+        { name: "from_name", type: "string", description: "Default sender display name override" },
+        { name: "notes", type: "string", description: "Admin notes about integration state" },
+      ],
+      relationships: []
+    },
+    {
+      name: "DashboardConfig", description: "Global dashboard widget configuration. Admins define the layout; all users see it.",
+      fields: [
+        { name: "name", type: "string", description: "Config name" },
+        { name: "description", type: "string", description: "Description" },
+        { name: "widgets", type: "array", description: "Widget definitions: [{id, title, entity, widget_type, group_by, metric, cols, date_field, months, filter}]" },
+        { name: "is_global", type: "boolean", description: "Global (shared with all users) flag" },
+        { name: "is_active", type: "boolean", description: "Active config flag" },
+      ],
+      relationships: []
+    },
+  ],
+  finance: [
+    {
+      name: "Invoice", description: "Client invoices for recruitment services.",
+      fields: [
+        { name: "invoice_number", type: "string", required: true, description: "Invoice number" },
+        { name: "company_id", type: "string", required: true, isLookup: true, references: "Company", description: "Billed company" },
+        { name: "issue_date", type: "date", required: true, description: "Issue date" },
+        { name: "due_date", type: "date", required: true, description: "Payment due date" },
+        { name: "items", type: "array", required: true, description: "Line items: [{description, quantity, rate, amount}]" },
+        { name: "subtotal", type: "number", description: "Pre-tax subtotal" },
+        { name: "tax_amount", type: "number", description: "Tax amount" },
+        { name: "total", type: "number", description: "Final total" },
+        { name: "status", type: "string", description: "draft | sent | paid | overdue | void" },
+      ],
+      relationships: [{ type: "Many-to-One", with: "Company", description: "Invoice billed to company" }]
+    },
+    {
+      name: "Expense", description: "Business expense tracking with categorization.",
+      fields: [
+        { name: "date", type: "date", required: true, description: "Expense date" },
+        { name: "name", type: "string", required: true, description: "Expense description" },
+        { name: "type", type: "string", required: true, description: "Expense category" },
+        { name: "amount", type: "number", required: true, description: "Amount in USD" },
+        { name: "payment_method", type: "string", description: "Payment method (card, cash, wire, etc.)" },
+        { name: "vendor", type: "string", description: "Vendor or payee" },
+        { name: "is_recurring", type: "boolean", description: "Recurring expense flag" },
+      ],
+      relationships: []
+    },
+  ],
+  supporting: [
+    {
+      name: "InboundEmail", description: "Pasted or uploaded inbound emails. Parsed by AI to create jobs or candidates.",
+      fields: [
+        { name: "from_email", type: "string", description: "Sender email" },
+        { name: "to_email", type: "string", description: "Recipient email" },
+        { name: "subject", type: "string", description: "Email subject" },
+        { name: "body", type: "string", description: "Email body text" },
+        { name: "received_date", type: "date", description: "Email received date" },
+        { name: "processed", type: "boolean", description: "Processing complete flag" },
+        { name: "processing_status", type: "string", description: "pending | processing | completed | failed" },
+        { name: "processing_notes", type: "string", description: "AI processing notes or error details" },
+        { name: "candidate_id", type: "string", isLookup: true, references: "Candidate", description: "Created/matched candidate" },
+        { name: "job_id", type: "string", isLookup: true, references: "Job", description: "Created/matched job" },
+      ],
+      relationships: [
+        { type: "Many-to-One", with: "Candidate", description: "Parsed resume creates/matches candidate" },
+        { type: "Many-to-One", with: "Job", description: "Parsed JD creates/matches job" },
+      ]
+    },
+    {
+      name: "JobStack", description: "Public job board entries cloned from internal jobs. Companies with job_stack_access receive email notifications.",
+      fields: [
+        { name: "title", type: "string", description: "Job title" },
+        { name: "description", type: "string", description: "Job description" },
+        { name: "rate", type: "string", description: "Rate or salary text" },
+        { name: "due_date", type: "date", description: "Target fill date" },
+        { name: "employment_type", type: "string", description: "Employment type" },
+        { name: "status", type: "string", description: "active | closed" },
+        { name: "client", type: "string", description: "Client company name (denormalized)" },
+        { name: "original_job_id", type: "string", isLookup: true, references: "Job", description: "Source internal job" },
+      ],
+      relationships: [{ type: "Many-to-One", with: "Job", description: "Cloned from internal job" }]
+    },
+    {
+      name: "Timesheet", description: "Time entries logged by recruiters. Supports weekly submission and admin approval.",
+      fields: [
+        { name: "user_id", type: "string", required: true, description: "User email logging time" },
+        { name: "date", type: "date", required: true, description: "Work date" },
+        { name: "job_id", type: "string", isLookup: true, references: "Job", description: "Job worked on (optional)" },
+        { name: "hours", type: "number", required: true, description: "Hours worked (0–24)" },
+        { name: "notes", type: "string", description: "Description of work" },
+        { name: "status", type: "string", description: "draft | submitted | approved | rejected | needs_revision" },
+      ],
+      relationships: []
+    },
+    {
+      name: "LeaveRequest", description: "Leave requests submitted by recruiters. Admin approval workflow with block on time entry.",
+      fields: [
+        { name: "user_id", type: "string", required: true, description: "Requesting user email" },
+        { name: "type", type: "string", required: true, description: "vacation | sick | personal | unpaid | other" },
+        { name: "start_date", type: "date", required: true, description: "Leave start" },
+        { name: "end_date", type: "date", required: true, description: "Leave end" },
+        { name: "reason", type: "string", description: "Reason for leave" },
+        { name: "status", type: "string", description: "pending | approved | declined | revision_requested" },
+        { name: "approver_id", type: "string", description: "Approving admin user ID/email" },
+        { name: "approved_date", type: "date", description: "Approval timestamp" },
+      ],
+      relationships: []
+    },
+  ],
 };
 
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function BRD() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [expandedEntities, setExpandedEntities] = useState({});
-  const [activeTab, setActiveTab] = useState("overview");
-  const [expandedSection, setExpandedSection] = useState(null);
+  const [activeTab, setActiveTab] = useState("document");
+  const [search, setSearch] = useState("");
 
-  const toggleEntity = (entityName) => {
-    setExpandedEntities(prev => ({
-      ...prev,
-      [entityName]: !prev[entityName]
-    }));
-  };
-
-  const toggleSection = (sectionId) => {
-    setExpandedSection(prev => prev === sectionId ? null : sectionId);
-  };
-
-  // Data Model Definition
-  const dataModel = {
-    core: [
-      {
-        name: "Candidate",
-        description: "Core entity representing job seekers and talent in the pipeline",
-        fields: [
-          { name: "first_name", type: "string", required: true, description: "First name" },
-          { name: "last_name", type: "string", required: true, description: "Last name" },
-          { name: "email", type: "string", required: true, description: "Email address" },
-          { name: "phone", type: "string", description: "Phone number" },
-          { name: "location", type: "string", description: "Current location" },
-          { name: "linkedin_url", type: "string", description: "LinkedIn profile URL" },
-          { name: "resume_url", type: "string", description: "Resume file URL" },
-          { name: "skills", type: "array", description: "Technical and professional skills" },
-          { name: "experience_years", type: "number", description: "Years of experience" },
-          { name: "current_title", type: "string", description: "Current job title" },
-          { name: "current_company", type: "string", description: "Current employer" },
-          { name: "salary_expectation", type: "number", description: "Salary expectation" },
-          { name: "availability", type: "string", description: "Availability timeframe (immediately, 2_weeks, 1_month, negotiable)" },
-          { name: "status", type: "string", description: "Candidate status (active, on_bench, our_bench, placed, inactive, do_not_contact, screened)" },
-          { name: "work_authorization", type: "string", description: "Work authorization status" },
-          { name: "notes", type: "string", description: "Internal notes" },
-          { name: "bench_match_score", type: "number", description: "AI bulk bench score (0-100)" },
-          { name: "screening_score", type: "number", description: "AI screening fit score (0-100)" }
-        ],
-        relationships: [
-          { type: "One-to-Many", with: "Application", description: "Candidates can have multiple job applications" },
-          { type: "One-to-Many", with: "Submission", description: "Candidates can be submitted to multiple jobs" },
-          { type: "One-to-Many", with: "Resume", description: "Candidates can have multiple resume versions" },
-          { type: "One-to-Many", with: "OutreachMessage", description: "Candidates receive outreach messages" }
-        ]
-      },
-      {
-        name: "Job",
-        description: "Job openings and requirements from client companies",
-        fields: [
-          { name: "title", type: "string", required: true, description: "Job title" },
-          { name: "company_id", type: "string", required: true, isLookup: true, references: "Company", description: "Company lookup" },
-          { name: "description", type: "string", description: "Job description" },
-          { name: "requirements", type: "string", description: "Required qualifications" },
-          { name: "location", type: "string", description: "Job location" },
-          { name: "remote_type", type: "string", description: "Work arrangement (onsite, remote, hybrid)" },
-          { name: "employment_type", type: "string", description: "Employment type (full_time, part_time, contract, contract_to_hire)" },
-          { name: "rate", type: "string", description: "Rate or salary range" },
-          { name: "priority", type: "string", description: "Job priority (low, medium, high, urgent)" },
-          { name: "status", type: "string", description: "Job status (draft, open, on_hold, filled, cancelled)" },
-          { name: "required_skills", type: "array", description: "Required technical skills" },
-          { name: "preferred_skills", type: "array", description: "Preferred additional skills" },
-          { name: "experience_required", type: "number", description: "Minimum years of experience" },
-          { name: "positions_available", type: "number", description: "Number of positions to fill" },
-          { name: "due_date", type: "date", description: "Target fill date" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "Company", description: "Jobs belong to a company" },
-          { type: "One-to-Many", with: "Application", description: "Jobs have multiple applications" },
-          { type: "One-to-Many", with: "Submission", description: "Jobs receive multiple submissions" }
-        ]
-      },
-      {
-        name: "Company",
-        description: "Client companies and internal organizations",
-        fields: [
-          { name: "name", type: "string", required: true, description: "Company name" },
-          { name: "industry", type: "string", description: "Industry sector" },
-          { name: "website", type: "string", description: "Company website" },
-          { name: "location", type: "string", description: "Primary location" },
-          { name: "description", type: "string", description: "Company description" },
-          { name: "type", type: "string", description: "Company type (client, internal)" },
-          { name: "status", type: "string", description: "Company status (active, prospect, inactive)" },
-          { name: "contacts", type: "array", description: "Company contacts with roles" },
-          { name: "job_stack_access", type: "boolean", description: "If true, contacts receive Job Stack emails" }
-        ],
-        relationships: [
-          { type: "One-to-Many", with: "Job", description: "Companies have multiple job openings" },
-          { type: "One-to-Many", with: "Invoice", description: "Companies receive invoices" }
-        ]
-      },
-      {
-        name: "Application",
-        description: "Candidate applications to specific jobs",
-        fields: [
-          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate lookup" },
-          { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Job lookup" },
-          { name: "status", type: "string", description: "Application status (sourced, applied, screening, submitted, interviewing, offered, hired, rejected, withdrawn)" },
-          { name: "stage_updated_date", type: "date", description: "When status was last updated" },
-          { name: "notes", type: "string", description: "Application notes" },
-          { name: "interview_dates", type: "array", description: "Interview history with feedback" },
-          { name: "submitted_by", type: "string", description: "Recruiter who submitted" },
-          { name: "client_feedback", type: "string", description: "Feedback from client" },
-          { name: "match_score", type: "number", description: "AI-generated match score (0-100)" },
-          { name: "score_details", type: "object", description: "Detailed score breakdown from AI" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "Candidate", description: "Application belongs to a candidate" },
-          { type: "Many-to-One", with: "Job", description: "Application is for a specific job" }
-        ]
-      }
-    ],
-    recruitment: [
-      {
-        name: "Submission",
-        description: "Candidate submissions to client jobs by recruiters",
-        fields: [
-          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate lookup" },
-          { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Job lookup" },
-          { name: "recruiter_id", type: "string", required: true, description: "Recruiter who made submission" },
-          { name: "submitted_date", type: "date", description: "Submission date" },
-          { name: "status", type: "string", description: "Submission status (submitted, under_review, interviewing, rejected, hired, withdrawn)" },
-          { name: "client_feedback", type: "string", description: "Client feedback" },
-          { name: "follow_up_date", type: "date", description: "Next follow-up date" },
-          { name: "follow_up_completed", type: "boolean", description: "Follow-up completion flag" },
-          { name: "interview_dates", type: "array", description: "Interview history" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "Candidate", description: "Submission is for a candidate" },
-          { type: "Many-to-One", with: "Job", description: "Submission is for a job" },
-          { type: "Many-to-One", with: "Recruiter", description: "Submission created by recruiter" }
-        ]
-      },
-      {
-        name: "Recruiter",
-        description: "Internal and external recruiters",
-        fields: [
-          { name: "first_name", type: "string", required: true, description: "First name" },
-          { name: "last_name", type: "string", required: true, description: "Last name" },
-          { name: "email", type: "string", required: true, description: "Email address" },
-          { name: "phone", type: "string", description: "Phone number" },
-          { name: "role", type: "string", description: "Recruiter type (internal, external, freelance)" },
-          { name: "specializations", type: "array", description: "Recruiting specializations" },
-          { name: "territory", type: "string", description: "Geographic territory" },
-          { name: "performance_metrics", type: "object", description: "Performance tracking metrics" },
-          { name: "status", type: "string", description: "Recruiter status (active, inactive, on_leave)" }
-        ],
-        relationships: [
-          { type: "One-to-Many", with: "Submission", description: "Recruiters create submissions" },
-          { type: "One-to-Many", with: "LeaveRequest", description: "Recruiters request leave" },
-          { type: "One-to-Many", with: "Timesheet", description: "Recruiters log time" }
-        ]
-      },
-      {
-        name: "Resume",
-        description: "Candidate resume versions and content",
-        fields: [
-          { name: "candidate_id", type: "string", isLookup: true, references: "Candidate", description: "Linked candidate" },
-          { name: "name", type: "string", required: true, description: "Display name" },
-          { name: "headline", type: "string", description: "Professional headline" },
-          { name: "email", type: "string", description: "Contact email" },
-          { name: "phone", type: "string", description: "Contact phone" },
-          { name: "summary", type: "string", description: "Professional summary" },
-          { name: "experiences", type: "array", description: "Work experience entries" },
-          { name: "education", type: "array", description: "Education entries" },
-          { name: "projects", type: "array", description: "Projects list" },
-          { name: "skills", type: "array", description: "Skills keywords" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "Candidate", description: "Resume belongs to candidate" }
-        ]
-      },
-      {
-        name: "OutreachMessage",
-        description: "Communication tracking with candidates",
-        fields: [
-          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate ID" },
-          { name: "job_id", type: "string", isLookup: true, references: "Job", description: "Related job (optional)" },
-          { name: "subject", type: "string", required: true, description: "Email subject" },
-          { name: "message", type: "string", required: true, description: "Message content" },
-          { name: "message_type", type: "string", description: "Type of outreach" },
-          { name: "channel", type: "string", description: "Communication channel (email, linkedin, phone)" },
-          { name: "status", type: "string", description: "Message status (draft, sent, delivered, opened, replied)" },
-          { name: "response_received", type: "boolean", description: "Response flag" },
-          { name: "sentiment", type: "string", description: "Response sentiment (positive, neutral, negative)" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "Candidate", description: "Outreach to candidate" },
-          { type: "Many-to-One", with: "Job", description: "Related to job (optional)" }
-        ]
-      },
-      {
-        name: "InterviewSession",
-        description: "Interview sessions and evaluations",
-        fields: [
-          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Candidate ID" },
-          { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Job ID" },
-          { name: "interview_date", type: "date", required: true, description: "Interview date/time" },
-          { name: "interview_type", type: "string", required: true, description: "Interview type (phone_screen, technical, behavioral, etc.)" },
-          { name: "interviewer", type: "string", description: "Interviewer name/email" },
-          { name: "status", type: "string", description: "Interview status (scheduled, completed, cancelled, no_show)" },
-          { name: "questions", type: "array", description: "Interview questions and responses" },
-          { name: "overall_score", type: "number", description: "Overall interview score (0-100)" },
-          { name: "recommendation", type: "string", description: "Hiring recommendation" },
-          { name: "ai_summary", type: "string", description: "AI-generated interview summary" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "Candidate", description: "Interview with candidate" },
-          { type: "Many-to-One", with: "Job", description: "Interview for job" }
-        ]
-      }
-    ],
-    workflow: [
-      {
-        name: "Task",
-        description: "Work items and follow-ups",
-        fields: [
-          { name: "title", type: "string", required: true, description: "Task title" },
-          { name: "description", type: "string", description: "Task description" },
-          { name: "assigned_to", type: "string", required: true, description: "User email assigned to" },
-          { name: "related_entity", type: "string", description: "What this relates to (candidate, job, company, submission, general)" },
-          { name: "related_id", type: "string", description: "ID of related entity" },
-          { name: "priority", type: "string", description: "Task priority (low, medium, high, urgent)" },
-          { name: "status", type: "string", description: "Task status (pending, in_progress, completed, cancelled)" },
-          { name: "due_date", type: "date", description: "Due date" },
-          { name: "completion_notes", type: "string", description: "Notes upon completion" }
-        ],
-        relationships: [
-          { type: "Polymorphic", with: "Multiple", description: "Can link to Candidate, Job, Company, Submission" }
-        ]
-      },
-      {
-        name: "Playbook",
-        description: "Process documentation and best practices",
-        fields: [
-          { name: "title", type: "string", required: true, description: "Playbook title" },
-          { name: "description", type: "string", description: "Playbook description" },
-          { name: "category", type: "string", required: true, description: "Category (onboarding, recruiting, procedures, etc.)" },
-          { name: "documents", type: "array", description: "Linked documents and resources" },
-          { name: "steps", type: "array", description: "Step-by-step process with checklists" },
-          { name: "tags", type: "array", description: "Tags for organization" },
-          { name: "keywords", type: "array", description: "Search keywords for AI matching" },
-          { name: "usage_count", type: "number", description: "View count" },
-          { name: "is_active", type: "boolean", description: "Active flag" }
-        ],
-        relationships: []
-      },
-      {
-        name: "AutomationRule",
-        description: "Automated workflow rules and triggers",
-        fields: [
-          { name: "name", type: "string", required: true, description: "Rule name" },
-          { name: "trigger_type", type: "string", required: true, description: "What triggers automation (status_change, time_based, manual)" },
-          { name: "trigger_entity", type: "string", required: true, description: "Which entity triggers (Submission, Application, Task)" },
-          { name: "trigger_status_to", type: "string", description: "Status to trigger on" },
-          { name: "action_type", type: "string", required: true, description: "Action to perform (send_email, create_task, send_notification)" },
-          { name: "email_template_id", type: "string", isLookup: true, references: "EmailTemplate", description: "Email template to use" },
-          { name: "is_active", type: "boolean", description: "Rule active flag" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "EmailTemplate", description: "Uses email template" }
-        ]
-      }
-    ],
-    ai: [
-      {
-        name: "MatchingProfile",
-        description: "AI matching configuration profiles with weighted criteria",
-        fields: [
-          { name: "name", type: "string", required: true, description: "Profile name" },
-          { name: "job_type", type: "string", required: true, description: "Job category" },
-          { name: "criteria_weights", type: "object", description: "Custom weights for matching criteria (should sum to 100)" },
-          { name: "required_skills", type: "array", description: "Skills with importance levels" },
-          { name: "soft_skills_keywords", type: "array", description: "Keywords to extract from profiles" },
-          { name: "ai_model", type: "string", description: "AI model to use (o1, claude-4.5, gpt-5, auto)" },
-          { name: "matching_strategy", type: "string", description: "Matching strategy (balanced, strict, lenient, learning)" },
-          { name: "learning_enabled", type: "boolean", description: "Learn from feedback" },
-          { name: "performance_metrics", type: "object", description: "Performance tracking" }
-        ],
-        relationships: [
-          { type: "One-to-Many", with: "MatchFeedback", description: "Has feedback entries" }
-        ]
-      },
-      {
-        name: "MatchFeedback",
-        description: "User feedback on AI match quality for continuous learning",
-        fields: [
-          { name: "matching_profile_id", type: "string", isLookup: true, references: "MatchingProfile", description: "Profile used" },
-          { name: "candidate_id", type: "string", required: true, isLookup: true, references: "Candidate", description: "Matched candidate" },
-          { name: "job_id", type: "string", required: true, isLookup: true, references: "Job", description: "Matched job" },
-          { name: "match_score", type: "number", required: true, description: "AI-generated score (0-100)" },
-          { name: "user_rating", type: "number", description: "User rating (1-5 stars)" },
-          { name: "user_action", type: "string", description: "Action taken (viewed, contacted, interviewed, hired, rejected)" },
-          { name: "was_helpful", type: "boolean", description: "Helpful flag" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "MatchingProfile", description: "Feedback for profile" },
-          { type: "Many-to-One", with: "Candidate", description: "Feedback on candidate" },
-          { type: "Many-to-One", with: "Job", description: "Feedback for job" }
-        ]
-      }
-    ],
-    admin: [
-      {
-        name: "User",
-        description: "System users with roles and permissions",
-        fields: [
-          { name: "email", type: "string", description: "Email (built-in)" },
-          { name: "full_name", type: "string", description: "Full name (built-in)" },
-          { name: "role", type: "string", description: "Built-in role (admin, user)" },
-          { name: "role_id", type: "string", isLookup: true, references: "Role", description: "Custom role lookup" },
-          { name: "status", type: "string", description: "Access state (active, inactive, invited)" },
-          { name: "is_locked", type: "boolean", description: "Account locked flag" },
-          { name: "last_active", type: "date", description: "Last active timestamp" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "Role", description: "User has a role" }
-        ]
-      },
-      {
-        name: "Role",
-        description: "Permission roles for access control",
-        fields: [
-          { name: "name", type: "string", required: true, description: "Role name (e.g., Admin, Recruiter)" },
-          { name: "description", type: "string", description: "Role description" },
-          { name: "permissions", type: "object", required: true, description: "Map of entity permissions (view, create, update, delete, scope)" }
-        ],
-        relationships: [
-          { type: "One-to-Many", with: "User", description: "Role assigned to users" }
-        ]
-      },
-      {
-        name: "AuditLog",
-        description: "System audit trail",
-        fields: [
-          { name: "user_email", type: "string", required: true, description: "User email" },
-          { name: "action", type: "string", required: true, description: "Action performed" },
-          { name: "ip", type: "string", description: "IP address" },
-          { name: "user_agent", type: "string", description: "Browser user agent" },
-          { name: "meta", type: "object", description: "Extra metadata" }
-        ],
-        relationships: []
-      },
-      {
-        name: "EmailTemplate",
-        description: "Reusable email templates",
-        fields: [
-          { name: "title", type: "string", required: true, description: "Template title" },
-          { name: "subject", type: "string", description: "Email subject" },
-          { name: "category", type: "string", description: "Template category" },
-          { name: "blocks", type: "array", description: "Structured content blocks" },
-          { name: "html_body", type: "string", description: "Rendered HTML" },
-          { name: "is_active", type: "boolean", description: "Active flag" }
-        ],
-        relationships: [
-          { type: "One-to-Many", with: "AutomationRule", description: "Used by automation rules" }
-        ]
-      }
-    ],
-    finance: [
-      {
-        name: "Invoice",
-        description: "Client invoices for services",
-        fields: [
-          { name: "invoice_number", type: "string", required: true, description: "Invoice number" },
-          { name: "company_id", type: "string", required: true, isLookup: true, references: "Company", description: "Billed company" },
-          { name: "issue_date", type: "date", required: true, description: "Issue date" },
-          { name: "due_date", type: "date", required: true, description: "Due date" },
-          { name: "items", type: "array", required: true, description: "Line items with quantity and price" },
-          { name: "subtotal", type: "number", description: "Sum of items" },
-          { name: "tax_amount", type: "number", description: "Tax amount" },
-          { name: "total", type: "number", description: "Final total" },
-          { name: "status", type: "string", description: "Invoice status (draft, sent, paid, overdue, void)" }
-        ],
-        relationships: [
-          { type: "Many-to-One", with: "Company", description: "Invoice for company" }
-        ]
-      },
-      {
-        name: "Expense",
-        description: "Business expenses tracking",
-        fields: [
-          { name: "date", type: "date", required: true, description: "Expense date" },
-          { name: "name", type: "string", required: true, description: "Expense description" },
-          { name: "type", type: "string", required: true, description: "Expense category" },
-          { name: "amount", type: "number", required: true, description: "Amount" },
-          { name: "payment_method", type: "string", description: "Payment method" },
-          { name: "vendor", type: "string", description: "Vendor/Payee" },
-          { name: "is_recurring", type: "boolean", description: "Recurring flag" }
-        ],
-        relationships: []
-      }
-    ]
-  };
-
-  const allEntities = [
-    ...dataModel.core,
-    ...dataModel.recruitment,
-    ...dataModel.workflow,
-    ...dataModel.ai,
-    ...dataModel.admin,
-    ...dataModel.finance
-  ];
-
-  const filteredEntities = allEntities.filter(entity =>
-    entity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entity.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entity.fields.some(field => 
-      field.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      field.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  const allEntities = Object.values(entities).flat();
+  const totalFields = allEntities.reduce((s, e) => s + e.fields.length, 0);
 
   const entityGroups = [
-    { key: "core", label: "Core Entities", entities: dataModel.core, color: "blue" },
-    { key: "recruitment", label: "Recruitment & Talent", entities: dataModel.recruitment, color: "purple" },
-    { key: "workflow", label: "Workflow & Process", entities: dataModel.workflow, color: "green" },
-    { key: "ai", label: "AI & Intelligence", entities: dataModel.ai, color: "pink" },
-    { key: "admin", label: "Admin & Security", entities: dataModel.admin, color: "orange" },
-    { key: "finance", label: "Finance & Billing", entities: dataModel.finance, color: "cyan" }
+    { key: "core", label: "Core Entities", color: "blue", items: entities.core },
+    { key: "recruitment", label: "Recruitment & Talent", color: "purple", items: entities.recruitment },
+    { key: "workflow", label: "Workflow & Process", color: "green", items: entities.workflow },
+    { key: "ai", label: "AI & Intelligence", color: "pink", items: entities.ai },
+    { key: "admin", label: "Admin & Security", color: "orange", items: entities.admin },
+    { key: "finance", label: "Finance & Billing", color: "cyan", items: entities.finance },
+    { key: "supporting", label: "Supporting Tables", color: "slate", items: entities.supporting },
   ];
 
-  const documentSections = [
-    {
-      id: "toc",
-      icon: List,
-      title: "Table of Contents",
-      content: (
-        <div className="space-y-2 text-sm">
-          <ol className="list-decimal list-inside space-y-1 ml-4">
-            <li>Project Overview & Goals</li>
-            <li>Users & Roles</li>
-            <li>Functional Requirements</li>
-            <li>Non-Functional Requirements</li>
-            <li>Data Model Overview</li>
-            <li>Role/Permissions Matrix</li>
-            <li>Integrations</li>
-            <li>Acceptance Criteria</li>
-            <li>Future Enhancements</li>
-            <li>Glossary</li>
-            <li>UI/Branding Update Overview</li>
-            <li>Recent Updates & New Features</li>
-            <li>AI Quick Actions - Detailed Specification</li>
-            <li>Paste to Add Candidate - Detailed Specification</li>
-            <li className="text-purple-700 font-semibold">NEW: AI Agent System</li>
-            <li className="text-purple-700 font-semibold">NEW: Email Blast System</li>
-            <li className="text-purple-700 font-semibold">NEW: Advanced AI Matching</li>
-            <li className="text-purple-700 font-semibold">NEW: API Reference & Integration</li>
-          </ol>
-        </div>
-      )
-    },
-    {
-      id: "overview",
-      icon: Target,
-      title: "1. Project Overview & Goals",
-      content: (
-        <div className="space-y-4">
-          <p className="text-slate-700 leading-relaxed">
-            <strong>TalentStack Recruiter X</strong> is a comprehensive recruitment management platform designed for staffing agencies
-            and internal recruiting teams. The system manages the complete recruitment lifecycle from candidate sourcing
-            through placement and invoicing.
-          </p>
+  const filteredGroups = entityGroups.map(g => ({
+    ...g,
+    items: g.items.filter(e =>
+      !search ||
+      e.name.toLowerCase().includes(search.toLowerCase()) ||
+      (e.description || "").toLowerCase().includes(search.toLowerCase()) ||
+      e.fields.some(f => f.name.toLowerCase().includes(search.toLowerCase()) || (f.description || "").toLowerCase().includes(search.toLowerCase()))
+    )
+  })).filter(g => g.items.length > 0);
 
-          <Card className="border-l-4 border-l-purple-500 bg-purple-50">
-            <CardContent className="p-4">
-              <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                Latest Updates & Features (December 2024)
-              </h4>
-              <div className="space-y-2 text-sm text-purple-800">
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[140px]">AI Agents:</span>
-                  <span>Intelligent automation agents that trigger on entity events (e.g., job creation) to perform AI analysis, create applications, and execute complex workflows</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[140px]">Email Blast:</span>
-                  <span>Mass email campaign tool for reaching all company contacts with AI-generated content and CSV export capabilities</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[140px]">Advanced Matching:</span>
-                  <span>Configurable AI matching with weighted criteria, multiple reasoning models (o1, Claude 4.5, GPT-5), learning from feedback, and performance tracking</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[140px]">AI Quick Actions:</span>
-                  <span>Conversational AI assistant (⌘J) for navigation, entity creation, and candidate parsing from pasted text</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[140px]">Paste to Add:</span>
-                  <span>Quick candidate creation by pasting resume text or LinkedIn bios with automatic field extraction</span>
-                </div>
+  const tabs = [
+    { id: "document", label: "Document", icon: FileText },
+    { id: "architecture", label: "Architecture", icon: Layers },
+    { id: "datamodel", label: "Data Model", icon: Database },
+    { id: "ai", label: "AI & LLMs", icon: Brain },
+    { id: "security", label: "Security", icon: Shield },
+    { id: "api", label: "API Reference", icon: Code },
+  ];
+
+  const colorBadge = { blue: "bg-blue-100 text-blue-800", purple: "bg-purple-100 text-purple-800", green: "bg-green-100 text-green-800", pink: "bg-pink-100 text-pink-800", orange: "bg-orange-100 text-orange-800", cyan: "bg-cyan-100 text-cyan-800", slate: "bg-slate-100 text-slate-700" };
+
+  return (
+    <div className="p-6 space-y-6 max-w-[1400px]">
+      {/* Header */}
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-6">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-[#1E293B] flex items-center justify-center">
+                <FileText className="w-5 h-5 text-white" />
               </div>
-            </CardContent>
-          </Card>
-
-          <h4 className="font-semibold text-slate-900 mt-6 mb-3">Core Objectives</h4>
-          <ul className="space-y-2 text-sm text-slate-700">
-            <li>• End-to-end recruitment workspace covering Candidates, Jobs, Companies (Connections), Submissions/Applications, Tasks, Invoices/Expenses, and Resumes</li>
-            <li>• Saved list views with visibility controls (Private, Team, Public, Role-based) to avoid duplicates</li>
-            <li>• Bulk Bench Scoring on "Our Bench" or any saved view; score persisted to Candidate</li>
-            <li>• Global Preview Center with context, quick navigation, and explicit Edit navigation</li>
-            <li>• LLM-powered Ask AI with page-aware context and action mode</li>
-            <li>• Role-based access control and audit logging; customizable global dashboard widgets</li>
-          </ul>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <Card className="border-l-4 border-l-blue-500">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <Database className="w-5 h-5 text-blue-600" />
-                  <h4 className="font-semibold">Data Model</h4>
-                </div>
-                <p className="text-sm text-slate-600">
-                  {allEntities.length} entities with {allEntities.reduce((sum, e) => sum + e.fields.length, 0)} total fields
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-l-4 border-l-purple-500">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <GitBranch className="w-5 h-5 text-purple-600" />
-                  <h4 className="font-semibold">Relationships</h4>
-                </div>
-                <p className="text-sm text-slate-600">
-                  Complex relationship graph with lookups, one-to-many, and polymorphic links
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-l-4 border-l-green-500">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <Zap className="w-5 h-5 text-green-600" />
-                  <h4 className="font-semibold">AI-Powered</h4>
-                </div>
-                <p className="text-sm text-slate-600">
-                  Machine learning for candidate matching, screening, and workflow automation
-                </p>
-              </CardContent>
-            </Card>
+              <div>
+                <h1 className="text-[22px] font-bold text-[#1E293B]" style={{ fontFamily: "var(--font-display)" }}>Recruiter X — Business Requirements Document</h1>
+                <p className="text-[13px] text-[#94A3B8]">Full system architecture · Data model · AI features · Security · API reference · As of April 2026</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3 shrink-0">
+            <div className="text-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-4 py-2">
+              <p className="text-[20px] font-bold text-[#2563EB]">{allEntities.length}</p>
+              <p className="text-[11px] text-[#94A3B8]">Entities</p>
+            </div>
+            <div className="text-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-4 py-2">
+              <p className="text-[20px] font-bold text-[#7C3AED]">{totalFields}</p>
+              <p className="text-[11px] text-[#94A3B8]">Fields</p>
+            </div>
+            <div className="text-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-4 py-2">
+              <p className="text-[20px] font-bold text-[#16A34A]">14</p>
+              <p className="text-[11px] text-[#94A3B8]">AI Features</p>
+            </div>
           </div>
         </div>
-      )
-    },
-    {
-      id: "users",
-      icon: Users,
-      title: "2. Users & Roles",
-      content: (
-        <div className="space-y-4 text-sm text-slate-700">
-          <div>
-            <h4 className="font-semibold text-base mb-2">Admin</h4>
-            <p>Full access to all entities; can manage Roles, DashboardConfig, and system settings. Can create global dashboards and shared views.</p>
-          </div>
-          <div>
-            <h4 className="font-semibold text-base mb-2">Recruiter</h4>
-            <p>View most records; create/update own; limited deletes by scope. Can edit Candidates and update status; bulk scoring and views available per visibility.</p>
-          </div>
-          <div>
-            <h4 className="font-semibold text-base mb-2">Candidate List Views</h4>
-            <p>Create views with filters, columns, sort; set default view. Visibility: Private, Team, Public, Role-based. Edit/Delete views (owner and admins only). RLS enforces visibility. Usable across pages and inside Bulk Scoring modal.</p>
-          </div>
+
+        {/* Tabs */}
+        <div className="flex gap-0 mt-5 border-b border-[#E2E8F0] -mb-6">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${activeTab === t.id ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-[#64748B] hover:text-[#1E293B]"}`}>
+              <t.icon className="w-3.5 h-3.5" />{t.label}
+            </button>
+          ))}
         </div>
-      )
-    },
-    {
-      id: "features",
-      icon: Sparkles,
-      title: "3. Functional Requirements",
-      content: (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.1 Dashboard</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>KPIs and charts for pipeline at-a-glance</li>
-                <li>Quick Actions to add key records</li>
-                <li>"My Tasks Today" card with inline complete</li>
-                <li>Custom Global Dashboard (Admin): Builder composes global layout</li>
-                <li>Widget types: KPI, Bar, Pie, Line, Stacked</li>
-                <li className="text-purple-700 font-semibold">NEW: AI Pipeline Insights with skill gap analysis, hiring forecast, pipeline health</li>
-              </CardContent>
-            </Card>
+      </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.2 Candidates</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Search, filter, add/edit from modal</li>
-                <li>Candidate Details: Overview, Applications, Documents, Activity</li>
-                <li>Related panel: Applications, Submissions, Tasks, Resumes</li>
-                <li>AI Candidate Summary panel with regenerate and Q&A</li>
-                <li className="text-purple-700 font-semibold">NEW: Paste to Add for quick candidate creation from text</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.3 Jobs</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>List, search, filter; view details and associated applications</li>
-                <li>Track status, priority, location, compensation, due date</li>
-                <li>Email Blast to marketing recruiters and selected candidates</li>
-                <li className="text-purple-700 font-semibold">NEW: AI Candidate Matching with top 5 ranked candidates and fit scores</li>
-                <li className="text-purple-700 font-semibold">NEW: Auto-matching agent triggers on job creation</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.4 Submissions</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Create submission, status tracking, client feedback</li>
-                <li>Follow-up reminders with due indicators and quick actions</li>
-                <li>Auto-create next-day follow-up Task on submission create</li>
-                <li>Board/List views with saved views; drag-and-drop updates status</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.5 Resume Studio</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Build tab: inline editor (left), live preview (right), zoom, save, print</li>
-                <li>Score tab: paste/upload JD and Resume; compare text only</li>
-                <li>AI Resume Builder panel: generate tailored JSON resume</li>
-                <li>Scoring model weights: Hard Skills (highest), Education, Job Title, Soft Skills</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.6 AI Assistant (Global)</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Floating launcher opens side-panel chat on every page</li>
-                <li>Loads scoped context (Candidates, Jobs, Applications, etc.)</li>
-                <li>Quick prompts for pipeline, overdue tasks, and top matches</li>
-                <li className="text-purple-700 font-semibold">NEW: AI Quick Actions (⌘J) with conversational interface</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.7 Access Control</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Users list with search and role assignment</li>
-                <li>Roles & Permissions matrix: toggle View/Create/Edit/Delete per entity</li>
-                <li>Scope All/Own enforcement</li>
-                <li>UI enforcement via PermissionGate; server-side RLS mirrors rules</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.8 Connections & Tasks</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Connections (Companies): lists with search/filters; details modal</li>
-                <li className="text-purple-700 font-semibold">NEW: Connections Email Blast with AI content generation</li>
-                <li>Consultants, Tasks, Playbooks: lists with search; create/edit per permissions</li>
-                <li>Playbooks include rich details and document links</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.9 Email Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Email sending gated by Email Settings</li>
-                <li>Provider Gmail/Outlook and connected flag</li>
-                <li>All email features disabled until connected</li>
-                <li>From uses current user where supported</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.10 Accounts</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Invoices: create/edit items, tax, totals; email to contacts</li>
-                <li>Invoices summary shows Pending and Received totals</li>
-                <li>Expenses: track categories, date, amount, vendor, notes</li>
-                <li>CSV import planned via backend functions</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.11 My Work (Enhanced)</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Tab-Based Navigation: Overview, Quick Entry, Weekly Submit, Leave Requests</li>
-                <li>Quick Stats Cards: Hours this week, approved hours, pending leave</li>
-                <li>Quick Time Entry: Single-form entry saves as draft</li>
-                <li>Leave Validation: Blocks time entry on leave dates</li>
-                <li>Auto-Notifications: Admins notified on submissions</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.12 Approvals (Enhanced)</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Quick Stats: Pending leaves, timesheets, hours, users waiting</li>
-                <li>Batch Operations: "Approve All" for efficiency</li>
-                <li>Weekly Grouping: Timesheets grouped by user + week</li>
-                <li className="text-purple-700 font-semibold">NEW: AI Insights - Workload analysis, productivity score, leave patterns, approval efficiency</li>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">3.13 Interview Assistant</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Question Library: Pre-built questions across 5 categories</li>
-                <li>Per-Question Rating: 1-5 scale slider for each question</li>
-                <li>Live Score Calculator: Auto-calculates overall score, completion %</li>
-                <li>AI Summary Integration: Uses calculated scores in analysis</li>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-blue-50 border-blue-200 mt-6">
-            <CardHeader>
-              <CardTitle className="text-base text-blue-900">Bulk Bench Scoring</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-blue-800 space-y-2">
-              <li>Select cohort via Candidate View (default: status=our_bench)</li>
-              <li>Select any Job with status Draft or Open</li>
-              <li>Skip candidates without resume; result marked as Skipped</li>
-              <li>Persist bench_match_score (0-100) and bench_score_details (JSON) to Candidate</li>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-green-50 border-green-200 mt-4">
-            <CardHeader>
-              <CardTitle className="text-base text-green-900">Preview Center & Editing</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-green-800 space-y-2">
-              <li>Right-side global preview for Candidate, Job, Company, Application, Task, Playbook</li>
-              <li>Explicit "Edit" actions bypass preview and navigate to full edit page</li>
-              <li>Inline status update for Candidate within preview</li>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: "api-reference",
-      icon: Code,
-      title: "API Reference & Integration",
-      content: (
-        <div className="space-y-6">
-          <Card className="bg-slate-50">
-            <CardHeader>
-              <CardTitle className="text-base">API Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-slate-700 space-y-3">
-              <p>
-                The TalentStack Recruiter X platform provides a comprehensive REST API built on the Base44 platform,
-                allowing programmatic access to all core entities and operations.
+      {/* ── DOCUMENT TAB ─────────────────────────────────────────────────────── */}
+      {activeTab === "document" && (
+        <div className="space-y-3">
+          <Section id="scope" icon={Target} title="Scope & Overview" defaultOpen>
+            <div className="space-y-4 text-[13px]">
+              <p className="text-[#475569] leading-relaxed">
+                <strong className="text-[#1E293B]">Recruiter X</strong> is a full-stack recruitment operations platform built as a React + Base44 application. It covers the complete recruitment lifecycle — from candidate sourcing, resume parsing, and AI-assisted matching, through submission tracking, interview coordination, placement, and invoicing — for staffing agencies and internal recruiting teams.
               </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <InfoCard color="blue" title="Platform Stack">
+                  <li>React 18 + Vite + Tailwind CSS</li>
+                  <li>React Router v7 (SPA)</li>
+                  <li>Base44 BaaS (entities, auth, storage)</li>
+                  <li>Base44 serverless functions (Deno)</li>
+                  <li>@tanstack/react-query for data fetching</li>
+                  <li>framer-motion, recharts, shadcn/ui</li>
+                </InfoCard>
+                <InfoCard color="purple" title="Functional Domains">
+                  <li>Recruitment operations (candidates, jobs, submissions)</li>
+                  <li>Resume & talent intelligence (Studio, AI scoring)</li>
+                  <li>Communication (templates, blasts, inbox)</li>
+                  <li>Workflow & process (tasks, playbooks, automation)</li>
+                  <li>Finance (invoices, expenses)</li>
+                  <li>Admin & governance (RBAC, audit, settings)</li>
+                </InfoCard>
+                <InfoCard color="green" title="Key Design Decisions">
+                  <li>Frontend-heavy orchestration (workflow in React)</li>
+                  <li>BaaS-style backend — all data via Base44 SDK</li>
+                  <li>AI-first augmentation across all major flows</li>
+                  <li>Mixed internal/public surfaces in one app</li>
+                  <li>Permission-aware UI + server-side RLS</li>
+                  <li>Right-side preview panel for quick context</li>
+                </InfoCard>
+              </div>
+            </div>
+          </Section>
+
+          <Section id="users" icon={Users} title="2. Users & Roles">
+            <div className="space-y-4 text-[13px]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoCard color="blue" title="Admin">
+                  <li>Full access to all entities and all records</li>
+                  <li>Manage Roles, DashboardConfig, AppSettings</li>
+                  <li>Create/edit global dashboards and shared views</li>
+                  <li>Approve timesheets and leave requests</li>
+                  <li>Access audit logs, access control, AI Agents, Email Blast</li>
+                  <li>Invite and manage all users</li>
+                </InfoCard>
+                <InfoCard color="purple" title="Recruiter (User)">
+                  <li>View most records; create/update own records</li>
+                  <li>Full Candidate create + update (status, notes, scores)</li>
+                  <li>Submit timesheets; create/view own leave requests</li>
+                  <li>Access to Jobs, Companies, Submissions (own scope)</li>
+                  <li>Limited delete by scope; cannot access admin pages</li>
+                  <li>Bulk scoring and saved views per visibility</li>
+                </InfoCard>
+              </div>
+              <InfoCard color="slate" title="Permission Matrix (per entity)">
+                <p className="mb-2">Each entity in Role.permissions has: <code className="bg-white px-1 rounded border">{"{ view, create, update, delete, scope: 'all'|'own' }"}</code></p>
+                <li><strong>scope: 'own'</strong> — enforces created_by = user.email filter client-side; RLS mirrors server-side</li>
+                <li><strong>scope: 'all'</strong> — user can see and act on all records of that entity</li>
+                <li>PermissionsProvider resolves matrix and exposes <code>can(entity, action)</code> and <code>listFilterFor(entity)</code></li>
+                <li>Special RLS exceptions: Task → assigned_to, Submission → recruiter_id</li>
+              </InfoCard>
+            </div>
+          </Section>
+
+          <Section id="features" icon={Sparkles} title="3. Functional Requirements">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px]">
+              {[
+                { title: "3.1 Dashboard", items: ["KPI metrics: active roles, pipeline count, monthly placements", "Pipeline funnel with conversion rates per stage", "Today's Tasks panel with inline complete", "Recent Candidates table with AI scores and stage", "AI Insights panel (live + on-demand LLM analysis)", "Tab views: Overview, Pipeline, Activity", "Admin: configurable global widget dashboard (KPI, Bar, Pie, Line, Stacked)", "Custom widget drag-and-drop reordering"] },
+                { title: "3.2 Candidates", items: ["Searchable talent pool with saved views and column customization", "Bulk operations: status update, delete, scoring", "Paste-to-Add from resume text or LinkedIn bio (AI extraction)", "Bulk Resume Upload with PDF extraction and deduplication", "AI Candidate Screening (fit score + analysis)", "AI Candidate Summary panel with regenerate and Q&A", "AI Enrichment: auto-fill missing profile fields", "Duplicate detection and merge assistance", "Right-side preview panel with inline status edit"] },
+                { title: "3.3 Jobs", items: ["List with search, saved views, priority and status filters", "Careers sync: open jobs published via syncJobToCareers function", "Email Blast to marketing recruiters or selected candidates", "AI Candidate Matching: top-N ranked candidates with scores", "Auto-matching agent trigger on job creation", "Job Stack cloning for public job board", "Company job stack email notifications on new openings", "Inbound email parsing to auto-create jobs"] },
+                { title: "3.4 Submissions / Applications", items: ["Create submission with candidate + job + recruiter", "Kanban and list views with drag-and-drop status updates", "Saved views with filters, columns, sort, and visibility controls", "Follow-up date tracking with overdue indicators", "Auto-create follow-up Task on submission creation", "Automation rules fire on status transitions", "Client feedback tracking per submission", "Interview date history with feedback per round"] },
+                { title: "3.5 Resume Studio", items: ["Build tab: inline form editor + live PDF-style preview", "AI Resume Builder: generate tailored JSON resume from JD", "Score tab: paste/upload JD and resume, get weighted fit score", "Version comparison: side-by-side diff of resume versions", "JD-Resume compare: match strengths and gaps", "Scoring model: Hard Skills > Education > Job Title > Soft Skills", "Export to PDF; theme color customization"] },
+                { title: "3.6 AI Assistant (Global)", items: ["Floating launcher on every authenticated page", "Loads page-aware context (candidates, jobs, applications)", "Conversational Q&A with suggested quick prompts", "Action planning: AI determines intent and executes CRUD", "AI Quick Actions (⌘J): natural language shortcut layer", "Supports: navigate, create_candidate, create_job, create_task, search"] },
+                { title: "3.7 Email Inbox", items: ["Paste or upload inbound email content", "AI parses job requirement emails → creates/updates Job", "AI parses resume emails → creates/updates Candidate + Application", "Processing status transitions with notes", "Linked to created records for traceability"] },
+                { title: "3.8 My Work & Approvals", items: ["Quick time entry form (saves as draft)", "Weekly timesheet view with daily hour grid", "Leave requests with type, date range, reason", "Leave validation: blocks time entry on leave dates", "Approvals page: batch approve timesheets and leaves", "AI Insights on workload, productivity, leave patterns", "Auto-notify admins on timesheet submission"] },
+                { title: "3.9 Playbooks", items: ["Categorized process documentation library", "Step-by-step guides with checklists and tips", "Document attachments (PDF, video, link, template)", "AI Smart Search: semantic search across playbooks", "Contextual Suggestions: AI recommends relevant playbooks", "Version history and changelog tracking", "Access level control: public | recruiter | manager | admin"] },
+                { title: "3.10 Automation Rules", items: ["Trigger: entity status change (e.g. Submission → submitted)", "Actions: send_email via template, create_task, send_notification", "Configurable delay in minutes (browser setTimeout)", "Recipient types: candidate, recruiter, hiring_manager, custom", "Active/inactive toggle; trigger count and last-triggered tracking", "Visual rule builder with entity and status selectors"] },
+                { title: "3.11 Finance", items: ["Invoices: line items, tax, totals, status lifecycle", "Email invoice to company contacts via template", "Invoice summary: pending and received totals", "Expenses: category, date, amount, vendor, recurring flag", "Permission-gated: view/create controlled by role"] },
+                { title: "3.12 Access Control", items: ["User management: search, invite, role assignment, lock/unlock", "Role builder: toggle view/create/update/delete per entity", "Scope selector: all or own per entity", "Audit log viewer: login events, user actions, IP, user agent", "Auto-logout after 3 hours of inactivity", "Forced logout on locked account (detected on next load)"] },
+              ].map(({ title, items }) => (
+                <div key={title} className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+                  <div className="px-4 py-3 bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                    <p className="font-semibold text-[13px] text-[#1E293B]">{title}</p>
+                  </div>
+                  <ul className="p-4 space-y-1.5">
+                    {items.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-[12px] text-[#475569]">
+                        <CheckCircle className="w-3 h-3 text-[#16A34A] mt-0.5 shrink-0" />{item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section id="nonfunctional" icon={Settings} title="4. Non-Functional Requirements">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px]">
+              <InfoCard color="blue" title="Performance">
+                <li>Roles and quick stats cached (15-min TTL) to avoid redundant fetches</li>
+                <li>Dashboard load guard: 30s debounce on re-fetch</li>
+                <li>Right-side preview loads entity data on demand (lazy)</li>
+                <li>React Query for server state caching and deduplication</li>
+                <li>AI calls scoped to minimum context window needed</li>
+              </InfoCard>
+              <InfoCard color="purple" title="Responsiveness">
+                <li>Tailwind responsive layout for mobile and desktop</li>
+                <li>Dedicated Mobile page with simplified task/candidate views</li>
+                <li>MobileTabBar for bottom navigation on small screens</li>
+                <li>Collapsible, pinnable sidebar with state persisted to localStorage</li>
+              </InfoCard>
+              <InfoCard color="green" title="Reliability & Error Handling">
+                <li>Errors bubble to surface (no silent catch) for fast iteration</li>
+                <li>Automation delays use browser setTimeout — not durable for production</li>
+                <li>AI calls wrapped with loading state and user feedback</li>
+                <li>File uploads via Base44 (not arbitrary storage writes)</li>
+              </InfoCard>
+              <InfoCard color="orange" title="UX Conventions">
+                <li>ESC closes all major modals</li>
+                <li>⌘K: command palette global search</li>
+                <li>⌘J: AI quick actions conversational panel</li>
+                <li>?: keyboard shortcuts help overlay</li>
+                <li>Right-click preview panel for candidate/job/company/task/playbook</li>
+                <li>Click on detail links intercepts to open preview (not navigate)</li>
+              </InfoCard>
+            </div>
+          </Section>
+
+          <Section id="workflows" icon={Activity} title="5. Backend Workflows (Client-Orchestrated)">
+            <div className="space-y-3 text-[13px]">
+              <p className="text-[#64748B]">Most workflow logic runs in React components. These are the primary orchestration flows:</p>
+              {[
+                { n: "1", title: "Candidate Ingestion", steps: ["Resume file upload → Base44 UploadFile → file_url stored on Candidate", "PDF extraction via ExtractDataFromUploadedFile → structured JSON", "Email deduplication check before create", "create/update Candidate record with extracted fields", "Optional: CandidateAIEnrichment fills missing fields via InvokeLLM"] },
+                { n: "2", title: "Job Publishing & Careers Sync", steps: ["Job create/update with status='open'", "Optional: clone to JobStack for public job board", "Notify companies with job_stack_access via email", "Invoke syncJobToCareers backend function → POST to talentstack.org/api/jobs", "On status change to filled/cancelled: update or remove from public board"] },
+                { n: "3", title: "Email Inbox Parsing", steps: ["User pastes or uploads inbound email content", "Saved as InboundEmail with processing_status='pending'", "AI (InvokeLLM) detects: job requirement or resume email", "Job path: extract title, skills, company, rate → create/update Job", "Resume path: extract candidate fields → create/update Candidate → create Application"] },
+                { n: "4", title: "Automation Rule Execution", steps: ["User action changes entity status (e.g. Submission → submitted)", "executeAutomation loads active AutomationRule rows matching trigger", "For each match: delay via setTimeout, then execute action", "send_email: render EmailTemplate + send via SendEmail integration", "create_task: create Task record linked to the entity", "Update AutomationRule.trigger_count and last_triggered"] },
+                { n: "5", title: "AI Candidate Matching", steps: ["Recruiter opens Job → Advanced Matching tab", "Fetch all active Candidates", "For each candidate: call InvokeLLM with job + candidate data + MatchingProfile weights", "Receive structured score: dimensions, strengths, concerns, recommendation", "Save MatchFeedback record; user rates → profile learns", "Top candidates shown ranked by score with visual breakdown"] },
+                { n: "6", title: "Bulk Bench Scoring", steps: ["Recruiter selects Candidate View (default: status=our_bench)", "Selects open/draft Job to score against", "For each candidate with resume_url: call InvokeLLM with resume + job", "Skip candidates without resume (mark Skipped)", "Persist bench_match_score + bench_score_details to Candidate", "Progress bar UI with per-candidate status"] },
+              ].map(w => (
+                <div key={w.n} className="border border-[#E2E8F0] rounded-xl p-4">
+                  <p className="font-semibold text-[#1E293B] mb-2">{w.n}. {w.title}</p>
+                  <ol className="space-y-1 ml-2">
+                    {w.steps.map((s, i) => (
+                      <li key={i} className="flex items-start gap-2 text-[12px] text-[#475569]">
+                        <span className="text-[#2563EB] font-semibold shrink-0">{i + 1}.</span>{s}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section id="integrations" icon={Zap} title="6. Integrations">
+            <div className="space-y-3 text-[13px]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3 bg-white rounded border">
-                  <p className="font-semibold text-slate-900 mb-1">Base URL</p>
-                  <code className="text-xs bg-slate-100 px-2 py-1 rounded">https://api.base44.com</code>
-                </div>
-                <div className="p-3 bg-white rounded border">
-                  <p className="font-semibold text-slate-900 mb-1">Authentication</p>
-                  <code className="text-xs bg-slate-100 px-2 py-1 rounded">Bearer Token (JWT)</code>
-                </div>
+                {[
+                  { name: "Core.InvokeLLM", color: "purple", desc: "Primary AI integration. Used for: candidate summaries, screening scores, bench scoring, resume scoring, JD comparison, outreach drafting, interview assistance, duplicate detection, email blast content, playbook search, pipeline insights, analytics narratives.", params: "prompt, response_json_schema, add_context_from_internet, file_urls, model" },
+                  { name: "Core.UploadFile", color: "blue", desc: "Upload resumes, JDs, and documents to Base44 storage. Returns file_url stored on Candidate or Resume entities.", params: "file (binary)" },
+                  { name: "Core.ExtractDataFromUploadedFile", color: "green", desc: "OCR and text extraction from PDF/CSV/Excel/images. Used for resume parsing and bulk import flows.", params: "file_url, json_schema" },
+                  { name: "Core.SendEmail", color: "orange", desc: "Send transactional emails. Gated by AppSettings (provider must be connected). Used for invoice emails, follow-ups, automation rule actions, and job blast.", params: "to, subject, body, from_name" },
+                  { name: "Core.GenerateImage", color: "pink", desc: "AI image generation. Registered in integrations.js but not prominently used in current UI.", params: "prompt, existing_image_urls" },
+                  { name: "syncJobToCareers (function)", color: "slate", desc: "Custom serverless function (Deno). Authenticates requester, loads job + company, transforms to public payload, POSTs to https://talentstack.org/api/jobs. Called when job status = open.", params: "job_id" },
+                ].map(int => (
+                  <div key={int.name} className={`border-l-4 ${int.color === "purple" ? "border-[#7C3AED]" : int.color === "blue" ? "border-[#2563EB]" : int.color === "green" ? "border-[#16A34A]" : int.color === "orange" ? "border-[#D97706]" : int.color === "pink" ? "border-[#DB2777]" : "border-[#475569]"} border border-[#E2E8F0] rounded-r-xl p-4`}>
+                    <code className="font-mono font-semibold text-[13px] text-[#1E293B]">{int.name}</code>
+                    <p className="text-[12px] text-[#475569] mt-1 mb-2">{int.desc}</p>
+                    <p className="text-[11px] text-[#94A3B8]"><strong>Params:</strong> {int.params}</p>
+                  </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </Section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">API Keys & Authentication</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2">Available API Keys</h4>
-                <div className="bg-slate-50 rounded p-4 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Badge className="bg-green-100 text-green-800">SET</Badge>
+          <Section id="future" icon={TrendingUp} title="7. Future Enhancements">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px]">
+              <InfoCard color="blue" title="AI & Matching">
+                <li>Semantic similarity search with vector embeddings</li>
+                <li>Predictive analytics: time-to-fill, offer acceptance probability</li>
+                <li>Auto-scheduling interviews based on availability</li>
+                <li>Sentiment analysis on client feedback</li>
+                <li>AI-driven follow-up suggestion engine</li>
+              </InfoCard>
+              <InfoCard color="purple" title="Automation & Durability">
+                <li>Move automation execution from browser to durable backend workers</li>
+                <li>Scheduled jobs via Base44 automations (cron/interval)</li>
+                <li>Real-agent runtime for AI Agents page (currently mock)</li>
+                <li>Smart nurturing campaigns with branching logic</li>
+              </InfoCard>
+              <InfoCard color="green" title="Communication">
+                <li>Two-way email sync (Gmail/Outlook connector)</li>
+                <li>Video interview recording and transcription</li>
+                <li>Candidate portal for self-service applications</li>
+                <li>SMS/WhatsApp outreach channel</li>
+              </InfoCard>
+              <InfoCard color="orange" title="Analytics & Reporting">
+                <li>Pipeline conversion and funnel analytics</li>
+                <li>Recruiter performance leaderboard</li>
+                <li>Revenue and placement forecasting</li>
+                <li>AI score impact on placement outcomes</li>
+              </InfoCard>
+            </div>
+          </Section>
+
+          <Section id="glossary" icon={BookOpen} title="8. Glossary">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px]">
+              {[
+                ["Match Score", "Weighted AI-calculated alignment (0–100) between a candidate and a job"],
+                ["Bench Score", "AI score for candidates on the bench against open jobs (bench_match_score)"],
+                ["Screening Score", "AI fit score from CandidateScreening (screening_score)"],
+                ["Scope (All/Own)", "Permission scope — 'own' limits records to created_by; 'all' gives full access"],
+                ["RLS", "Row-Level Security — server-side enforcement mirroring client permission rules"],
+                ["Pipeline Health", "AI-assessed recruitment pipeline state: healthy | at_risk | critical"],
+                ["AI Quick Actions", "Conversational AI panel (⌘J) for executing actions via natural language"],
+                ["Paste to Add", "Quick candidate creation from unstructured resume or LinkedIn text"],
+                ["MatchingProfile", "Configurable AI matching config with weighted criteria and model selection"],
+                ["MatchFeedback", "User rating/action on an AI match — feeds continuous learning loop"],
+                ["Job Stack", "Public job board — open jobs cloned and published for external visibility"],
+                ["AutomationRule", "Event-driven rule that fires email send or task creation on status change"],
+                ["Bench", "Candidates available for placement — 'on_bench' (vendor) or 'our_bench' (internal)"],
+                ["InvokeLLM", "Base44 integration for calling LLMs — the primary AI execution surface"],
+                ["DashboardConfig", "Saved global widget layout for the Dashboard (admin-controlled)"],
+                ["Preview Panel", "Right-side sliding panel for quick entity viewing without full navigation"],
+              ].map(([term, def]) => (
+                <div key={term} className="flex items-start gap-2 p-2 bg-[#F8FAFC] rounded-lg border border-[#F1F5F9]">
+                  <span className="font-semibold text-[#1E293B] min-w-[160px] shrink-0">{term}</span>
+                  <span className="text-[#64748B]">{def}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
+        </div>
+      )}
+
+      {/* ── ARCHITECTURE TAB ──────────────────────────────────────────────────── */}
+      {activeTab === "architecture" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <LayerCard icon={Globe} color="border-[#2563EB]" title="1. Presentation Tier" items={[
+              "Internal recruiter/admin SPA (React Router)",
+              "Public marketing pages (Landing, Blog, Careers, Contact, Products, Services)",
+              "Command palette (⌘K), AI quick actions (⌘J), keyboard shortcuts (?)",
+              "Right-side preview panel (Candidate, Job, Company, Application, Task, Playbook)",
+              "Dashboard with tabs, KPI cards, kanban boards, AI insights",
+              "Resume Studio (build, score, compare, AI builder)",
+              "Mobile-optimized pages and components",
+            ]} />
+            <LayerCard icon={Cpu} color="border-[#7C3AED]" title="2. Client Application Tier" items={[
+              "App.jsx: AuthProvider + QueryClientProvider + BrowserRouter + VisualEditAgent + Toaster",
+              "pages.config.js: page registry and routing source of truth",
+              "Layout.jsx: sidebar nav, quick stats, search, preview orchestration, AI assistant",
+              "PermissionsContext: role/permission matrix, list filters, can() checks",
+              "AuthContext: public app settings, token validation, me() resolution",
+              "NavigationTracker, NotificationToast, refreshBus, window custom events",
+              "rolesCache: 15-min in-memory cache for Role entities",
+            ]} />
+            <LayerCard icon={Server} color="border-[#16A34A]" title="3. Platform / Backend Tier (Base44)" items={[
+              "Entity store: list, filter, get, create, update, delete per entity",
+              "Auth: token-based JWT, me(), logout(), redirectToLogin()",
+              "Base44 integrations: InvokeLLM, SendEmail, UploadFile, ExtractDataFromUploadedFile, GenerateImage",
+              "Serverless functions (Deno): syncJobToCareers",
+              "File storage: UploadFile returns permanent public URL",
+              "RLS enforcement: mirrors client-side permission rules server-side",
+            ]} />
+            <LayerCard icon={Globe} color="border-[#D97706]" title="4. External Services" items={[
+              "talentstack.org/api/jobs: public careers job sync endpoint",
+              "ipify.org: IP address resolution for audit logs",
+              "LLM inference: via Base44 Core.InvokeLLM (provider abstracted)",
+              "Email delivery: via Base44 Core.SendEmail (Gmail/Outlook-gated)",
+              "Google Fonts: Bricolage Grotesque, IBM Plex Sans, JetBrains Mono",
+            ]} />
+          </div>
+
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
+            <p className="font-semibold text-[#1E293B] text-[14px] mb-4">Key Routing & Bootstrap</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12px]">
+              <InfoCard color="blue" title="App.jsx Bootstrap Order">
+                <li>AuthProvider wraps everything — loads public settings first</li>
+                <li>QueryClientProvider for React Query</li>
+                <li>BrowserRouter + NavigationTracker</li>
+                <li>AuthenticatedApp: checks isLoadingPublicSettings, isLoadingAuth</li>
+                <li>Handles user_not_registered and auth_required errors</li>
+                <li>Renders Layout + Routes from pagesConfig loop</li>
+              </InfoCard>
+              <InfoCard color="purple" title="pages.config.js">
+                <li>Single source of truth for route → component mapping</li>
+                <li>Internal: Dashboard, Candidates, Jobs, Companies, Submissions, Tasks, Goals, Recruiters, Consultants, Expenses, Invoices, AccessControl, AutomationRules, EmailSettings, EmailInbox, AIAgents, ResumeStudio, Playbooks, DuplicateManager, MyWork, Approvals, EmailBlast, BRD</li>
+                <li>Public: Landing, Home, Products, Services, Blog, Contact, Careers</li>
+                <li>Detail: CandidateDetails, CompanyDetails, JobDetails, TaskDetails, PlaybookDetails</li>
+              </InfoCard>
+              <InfoCard color="green" title="Layout.jsx Services">
+                <li>Sidebar: collapsible (ChevronsLeft/Right), pinnable (Pin/PinOff), state in localStorage</li>
+                <li>Quick Stats: active jobs, new candidates, this month placements</li>
+                <li>Preview orchestration: listens for preview:open custom events</li>
+                <li>Auto-logout: 3-hour inactivity timer resets on mouse/key activity</li>
+                <li>Audit log: login event with IP captured once per session</li>
+                <li>Auto-complete tasks on candidate/application status change</li>
+                <li>Permission patch: ensures Recruiter role can update Candidates</li>
+              </InfoCard>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DATA MODEL TAB ────────────────────────────────────────────────────── */}
+      {activeTab === "datamodel" && (
+        <div className="space-y-5">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+              <Input placeholder="Search entities, fields, descriptions..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+            </div>
+          </div>
+
+          {filteredGroups.map(group => (
+            <div key={group.key} className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${colorBadge[group.color]}`}>{group.label}</span>
+                <span className="text-[12px] text-[#94A3B8]">{group.items.length} {group.items.length === 1 ? "entity" : "entities"}</span>
+              </div>
+              {group.items.map(e => <EntityBlock key={e.name} {...e} />)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── AI TAB ────────────────────────────────────────────────────────────── */}
+      {activeTab === "ai" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <InfoCard color="blue" title="LLM Access Pattern">
+              <p className="text-[#64748B] mb-2">All LLM calls go through Base44's <code>Core.InvokeLLM</code>. No vendor SDK is called directly. Base44 handles provider selection and model execution.</p>
+              <li><strong>Default model:</strong> gpt-4o-mini (auto)</li>
+              <li><strong>Premium models:</strong> o1, claude-4.5, gpt-5, gpt-4o</li>
+              <li><strong>Pattern:</strong> structured JSON schema output</li>
+              <li><strong>Context:</strong> page-aware data summaries as prompt context</li>
+            </InfoCard>
+            <InfoCard color="purple" title="Models Referenced in UI">
+              <li><strong>o1:</strong> Complex multi-criteria reasoning (matching)</li>
+              <li><strong>gpt-4o:</strong> Fast reliable scoring and generation</li>
+              <li><strong>claude-4.5:</strong> Balanced analysis and summarization</li>
+              <li><strong>gpt-5:</strong> Advanced understanding (matching profiles)</li>
+              <li><strong>auto:</strong> System picks best for the task</li>
+            </InfoCard>
+            <InfoCard color="green" title="LLM Usage Styles">
+              <li>Structured JSON extraction (resume parsing, inbox parsing)</li>
+              <li>Scoring and ranking (screening, bench, matching)</li>
+              <li>Summarization (candidate summary, interview recap)</li>
+              <li>Content generation (outreach, email blast, resume builder)</li>
+              <li>Recommendation reasoning (insights, analytics, suggestions)</li>
+              <li>Duplicate detection assistance (DuplicateManager)</li>
+            </InfoCard>
+          </div>
+
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
+            <p className="font-semibold text-[#1E293B] text-[14px] mb-4">AI Feature Inventory</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px]">
+              {[
+                { n: "1", name: "AI Assistant", comp: "components/ai/Assistant", desc: "Page-aware conversational assistant. Loads context from multiple entities. Supports Q&A and action execution (create records, navigate). Floating launcher on every page." },
+                { n: "2", name: "AI Quick Actions (⌘J)", comp: "components/common/AIQuickActions", desc: "Natural language shortcut layer. Detects intent: navigate, create_candidate, create_job, create_task, search. Executes actions with confirmation." },
+                { n: "3", name: "Advanced Candidate Matching", comp: "components/ai/AdvancedCandidateMatching", desc: "Weighted multi-criteria matching (7 dimensions). Configurable MatchingProfile with model selection. Persists MatchFeedback for learning loop." },
+                { n: "4", name: "Candidate Screening", comp: "components/ai/CandidateScreening", desc: "AI fit analysis for a candidate against a specific job. Outputs screening_score + detailed matching/missing qualifications. Stored on Candidate entity." },
+                { n: "5", name: "Bulk Bench Scoring", comp: "components/ai/BulkBenchScorer", desc: "Batch AI scoring of a candidate cohort (Candidate View) against a selected job. Skips candidates without resume. Persists bench_match_score to Candidate." },
+                { n: "6", name: "Advanced Scoring", comp: "components/ai/AdvancedScoring", desc: "Individual deep scoring of a candidate for a job. Detailed dimension breakdown displayed with visual progress bars." },
+                { n: "7", name: "Bulk Scoring", comp: "components/ai/BulkScoring", desc: "Multi-candidate scoring in a batch operation. Used for pipeline analysis across a subset of candidates." },
+                { n: "8", name: "Resume AI Assistant", comp: "components/resume/ResumeAIAssistant", desc: "In-Resume Studio AI chat. Provides suggestions for improving resume content, tailoring to JDs, and filling gaps." },
+                { n: "9", name: "Resume LLM Builder", comp: "components/resume/ResumeLLMBuilder", desc: "Generates a complete structured JSON resume from a job description or free-form input. Populates all resume sections." },
+                { n: "10", name: "Resume Scorer", comp: "components/resume/ResumeScorer", desc: "Paste or upload JD and resume. Calculates weighted fit score with Hard Skills, Education, Job Title, Soft Skills breakdown." },
+                { n: "11", name: "Candidate AI Summary", comp: "components/ai/CandidateAISummary", desc: "Auto-generated candidate profile summary. Displayed in candidate preview/details. Supports regeneration and Q&A follow-up." },
+                { n: "12", name: "Candidate AI Enrichment", comp: "components/ai/CandidateAIEnrichment", desc: "Fills missing candidate fields (title, skills, experience, location) by analyzing existing data with InvokeLLM." },
+                { n: "13", name: "Candidate Outreach", comp: "components/ai/CandidateOutreach", desc: "AI-generated outreach email draft for recruiters. Personalized to candidate profile and target job. Multiple tones available." },
+                { n: "14", name: "Interview Assistant", comp: "components/ai/InterviewAssistant", desc: "Question library with 5 categories, per-question scoring (1–5), live score calculator, and AI summary of the interview session." },
+                { n: "15", name: "Talent Pipeline Analytics", comp: "components/ai/TalentPipelineAnalytics", desc: "AI-generated pipeline insights: skill gaps, hiring forecast, pipeline health, conversion analysis, trend narratives." },
+                { n: "16", name: "Email Inbox AI Parsing", comp: "pages/EmailInbox", desc: "Detects if inbound email is a job requirement or candidate resume. Extracts structured data and creates/updates Job or Candidate + Application records." },
+                { n: "17", name: "Email Blast AI Content", comp: "pages/EmailBlast", desc: "AI-generates professional campaign email body from a subject line. Includes intro, value props, CTA, signature." },
+                { n: "18", name: "Playbook Smart Search", comp: "components/playbooks/PlaybookSmartSearch", desc: "Semantic search across playbooks using AI. Returns most relevant playbooks for a natural language query." },
+                { n: "19", name: "Contextual Suggestions", comp: "components/playbooks/ContextualSuggestions", desc: "AI recommends relevant playbooks based on current page context or user query." },
+                { n: "20", name: "Duplicate Manager", comp: "pages/DuplicateManager", desc: "AI-assisted detection of duplicate candidate or company records. Provides merge reasoning and similarity scoring." },
+              ].map(f => (
+                <div key={f.n} className="border border-[#E2E8F0] rounded-xl p-3">
+                  <div className="flex items-start gap-2 mb-1">
+                    <span className="font-bold text-[#2563EB] shrink-0">{f.n}.</span>
                     <div>
-                      <code className="text-xs bg-white px-2 py-1 rounded border">XAI_API_KEY</code>
-                      <p className="text-xs text-slate-600 mt-1">xAI (Grok) API key for advanced AI reasoning</p>
+                      <p className="font-semibold text-[#1E293B]">{f.name}</p>
+                      <code className="text-[10px] text-[#94A3B8]">{f.comp}</code>
                     </div>
                   </div>
+                  <p className="text-[#475569] text-[11px] ml-5">{f.desc}</p>
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2">Authentication Flow</h4>
-                <ol className="list-decimal list-inside space-y-2 ml-2">
-                  <li>User authenticates via Base44 platform login</li>
-                  <li>JWT token generated and stored in session</li>
-                  <li>Token included in all API requests via Authorization header</li>
-                  <li>Token auto-refreshes on activity; expires after 3 hours of inactivity</li>
-                </ol>
-              </div>
+          <InfoCard color="orange" title="AI Agents Status (April 2026)">
+            <p className="text-[#92400E] mb-2">The AIAgents page presents a product concept and builder UI. In the current codebase it operates on mock agent data and should be treated as a partially implemented management surface, <strong>not a production-grade agent runtime</strong>. The agents/ directory contains JSON configs for job_matcher and talent_matcher but these are not yet wired to a durable execution engine.</p>
+            <li>Visual agent management with performance stats (mock)</li>
+            <li>Agent builder UI: trigger config, tool permissions, AI model selection</li>
+            <li>Planned: real event-driven execution via Base44 entity automations</li>
+          </InfoCard>
+        </div>
+      )}
 
-              <div className="bg-blue-50 border border-blue-200 rounded p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Request Headers</h4>
-                <pre className="text-xs bg-white rounded p-3 overflow-x-auto">
-{`Authorization: Bearer <jwt_token>
-Content-Type: application/json
-Accept: application/json`}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
+      {/* ── SECURITY TAB ──────────────────────────────────────────────────────── */}
+      {activeTab === "security" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <InfoCard color="blue" title="Authentication">
+                <li>Base44-hosted authentication — no custom auth backend</li>
+                <li>JWT token accepted from URL param <code>access_token</code>, removed from URL after capture</li>
+                <li>App validates public app settings before user auth check</li>
+                <li>Login redirect: <code>base44.auth.redirectToLogin(nextUrl)</code></li>
+                <li>Logout: <code>base44.auth.logout(redirectUrl)</code></li>
+                <li>Auto-logout: 3-hour inactivity timer (mousemove, keydown, mousedown, touchstart)</li>
+                <li>Forced logout on next load if user is_locked = true or status ≠ active</li>
+              </InfoCard>
+              <InfoCard color="purple" title="Authorization (RBAC)">
+                <li>Built-in user.role (admin | user) + custom Role entity</li>
+                <li>PermissionsProvider resolves: isAdmin, can(entity, action), listFilterFor(entity)</li>
+                <li>Supported actions per entity: view, create, update, delete</li>
+                <li>Scope: 'all' (full access) or 'own' (created_by filter)</li>
+                <li>Special scopes: Task → assigned_to; Submission → recruiter_id</li>
+                <li>PermissionGate component prevents disallowed UI elements from rendering</li>
+                <li>AccessBlocker shown to locked/inactive users who slip past auth</li>
+              </InfoCard>
+            </div>
+            <div className="space-y-3">
+              <InfoCard color="green" title="Data Security">
+                <li>Email sending requires AppSettings.provider_connected = true</li>
+                <li>File uploads via Base44 integrations (not arbitrary storage writes)</li>
+                <li>Only one custom backend function (syncJobToCareers) — validates auth before acting</li>
+                <li>Audit log captures login events with IP (ipify) and user agent</li>
+                <li>RLS on Base44 platform mirrors client-side permission rules server-side</li>
+                <li>Sensitive entities (Role, AppSettings, AuditLog) locked to admin-only RLS</li>
+              </InfoCard>
+              <InfoCard color="red" title="Known Risks & Limitations">
+                <li>Frontend-heavy orchestration: most workflow logic executes in the browser (session/network sensitive)</li>
+                <li>Automation delays use browser setTimeout — not durable for production background jobs</li>
+                <li>Client-side permission enforcement: server-side RLS not fully visible in this repo</li>
+                <li>AI Agents page is a product shell on mock data — not a real execution engine</li>
+                <li>Auth token handling depends on Base44 platform guarantees</li>
+                <li>No server-side rate limiting on entity operations beyond Base44 platform limits</li>
+              </InfoCard>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Core API Endpoints</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Candidates API */}
-              <div className="border rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  Candidates API
-                </h4>
-                
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-green-100 text-green-800">GET</Badge>
-                      <code className="text-xs">/entities/Candidate</code>
-                    </div>
-                    <p className="text-slate-600 text-xs mb-2">List all candidates (respects RLS permissions)</p>
-                    <div className="bg-slate-50 rounded p-2">
-                      <p className="text-xs text-slate-500 mb-1">Query Parameters:</p>
-                      <ul className="text-xs space-y-1 ml-3">
-                        <li>• <code>sort</code>: Sort field (e.g., "-created_date" for descending)</li>
-                        <li>• <code>limit</code>: Number of records (default: 50)</li>
-                        <li>• <code>filter</code>: JSON filter object</li>
-                      </ul>
-                    </div>
-                  </div>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
+            <p className="font-semibold text-[#1E293B] mb-3">Permission Matrix (Typical Configuration)</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                    <th className="text-left px-3 py-2 font-semibold text-[#475569]">Entity</th>
+                    {["Admin View", "Admin Write", "Recruiter View", "Recruiter Write", "Scope"].map(h => (
+                      <th key={h} className="text-center px-3 py-2 font-semibold text-[#475569]">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Candidate", "✓", "✓", "✓", "✓ (update)", "all / own"],
+                    ["Job", "✓", "✓", "✓", "✓", "all"],
+                    ["Company", "✓", "✓", "✓", "✓", "all"],
+                    ["Application", "✓", "✓", "✓ (own)", "✓ (own)", "own"],
+                    ["Submission", "✓", "✓", "✓ (own)", "✓ (own)", "own (recruiter_id)"],
+                    ["Task", "✓", "✓", "✓ (own)", "✓ (own)", "own (assigned_to)"],
+                    ["Invoice / Expense", "✓", "✓", "✓ (if granted)", "—", "own"],
+                    ["Role / AuditLog", "✓", "✓", "—", "—", "admin only"],
+                    ["AppSettings", "✓", "✓", "—", "—", "admin only"],
+                    ["DashboardConfig", "✓", "✓", "✓ (read)", "—", "admin write"],
+                  ].map(([entity, ...cells]) => (
+                    <tr key={entity} className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC]">
+                      <td className="px-3 py-2 font-medium text-[#1E293B]">{entity}</td>
+                      {cells.map((c, i) => (
+                        <td key={i} className={`px-3 py-2 text-center ${c === "✓" ? "text-[#16A34A]" : c === "—" ? "text-[#94A3B8]" : "text-[#475569]"}`}>{c}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-blue-100 text-blue-800">POST</Badge>
-                      <code className="text-xs">/entities/Candidate</code>
-                    </div>
-                    <p className="text-slate-600 text-xs mb-2">Create new candidate</p>
-                    <div className="bg-slate-50 rounded p-2">
-                      <p className="text-xs text-slate-500 mb-1">Required fields:</p>
-                      <code className="text-xs">first_name, last_name, email</code>
-                    </div>
-                  </div>
+      {/* ── API TAB ────────────────────────────────────────────────────────────── */}
+      {activeTab === "api" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <InfoCard color="blue" title="Base URL & Authentication">
+              <li><strong>Base URL:</strong> <code>https://api.base44.com</code></li>
+              <li><strong>Auth:</strong> Bearer JWT token in Authorization header</li>
+              <li><strong>Content-Type:</strong> application/json</li>
+              <li>Token refreshes on activity; expires after 3 hours inactivity</li>
+              <li>Existing secrets: <code>XAI_API_KEY</code> (xAI/Grok for advanced reasoning)</li>
+            </InfoCard>
+            <InfoCard color="green" title="SDK Usage (Frontend)">
+              <p className="mb-2">Import the pre-initialized client:</p>
+              <code className="block bg-white rounded border p-2 text-[11px]">{"import { base44 } from '@/api/base44Client';"}</code>
+            </InfoCard>
+          </div>
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-yellow-100 text-yellow-800">PUT</Badge>
-                      <code className="text-xs">/entities/Candidate/:id</code>
-                    </div>
-                    <p className="text-slate-600 text-xs">Update candidate by ID</p>
-                  </div>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 space-y-4">
+            <p className="font-semibold text-[#1E293B] text-[14px]">SDK Entity Operations</p>
+            <CodeBlock code={`import { base44 } from '@/api/base44Client';
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-red-100 text-red-800">DELETE</Badge>
-                      <code className="text-xs">/entities/Candidate/:id</code>
-                    </div>
-                    <p className="text-slate-600 text-xs">Delete candidate by ID</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Jobs API */}
-              <div className="border rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-purple-600" />
-                  Jobs API
-                </h4>
-                
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-green-100 text-green-800">GET</Badge>
-                      <code className="text-xs">/entities/Job</code>
-                    </div>
-                    <p className="text-slate-600 text-xs mb-2">List all jobs</p>
-                    <div className="bg-slate-50 rounded p-2">
-                      <p className="text-xs text-slate-500 mb-1">Common filters:</p>
-                      <ul className="text-xs space-y-1 ml-3">
-                        <li>• <code>{"{\"status\": \"open\"}"}</code> - Active jobs only</li>
-                        <li>• <code>{"{\"priority\": \"high\"}"}</code> - High priority jobs</li>
-                        <li>• <code>{"{\"company_id\": \"<id>\"}"}</code> - Jobs by company</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-blue-100 text-blue-800">POST</Badge>
-                      <code className="text-xs">/entities/Job</code>
-                    </div>
-                    <p className="text-slate-600 text-xs mb-2">Create new job</p>
-                    <div className="bg-slate-50 rounded p-2">
-                      <p className="text-xs text-slate-500 mb-1">Required fields:</p>
-                      <code className="text-xs">title, company_id</code>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Applications API */}
-              <div className="border rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                  <Send className="w-4 h-4 text-green-600" />
-                  Applications API
-                </h4>
-                
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-green-100 text-green-800">GET</Badge>
-                      <code className="text-xs">/entities/Application</code>
-                    </div>
-                    <p className="text-slate-600 text-xs">List all applications with candidate-job relationships</p>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-blue-100 text-blue-800">POST</Badge>
-                      <code className="text-xs">/entities/Application</code>
-                    </div>
-                    <p className="text-slate-600 text-xs mb-2">Create application</p>
-                    <div className="bg-slate-50 rounded p-2">
-                      <p className="text-xs text-slate-500 mb-1">Required fields:</p>
-                      <code className="text-xs">candidate_id, job_id</code>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">JSON Structure Reference</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Candidate JSON */}
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  Candidate JSON Structure
-                </h4>
-                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
-{`{
-  "id": "uuid",                          // Auto-generated
-  "created_date": "2024-01-15T10:30:00Z", // Auto-generated
-  "updated_date": "2024-01-15T10:30:00Z", // Auto-generated
-  "created_by": "user@example.com",      // Auto-generated
-  
-  "first_name": "John",                  // Required
-  "last_name": "Doe",                    // Required
-  "email": "john.doe@email.com",         // Required
-  "phone": "+1-555-0123",
-  "location": "New York, NY",
-  "linkedin_url": "https://linkedin.com/in/johndoe",
-  "resume_url": "https://storage.../resume.pdf",
-  
-  "skills": ["JavaScript", "React", "Node.js", "AWS"],
-  "experience_years": 5,
-  "current_title": "Senior Software Engineer",
-  "current_company": "Tech Corp",
-  "salary_expectation": 120000,
-  "availability": "2_weeks",
-  "status": "active",
-  "work_authorization": "citizen",
-  
-  "notes": "Strong full-stack developer...",
-  "source": "LinkedIn",
-  "tags": ["javascript", "senior", "full-stack"],
-  
-  "bench_match_score": 85,
-  "bench_score_details": {
-    "technical_skills": 90,
-    "experience_level": 85,
-    "location_fit": 80
-  },
-  
-  "screening_score": 78,
-  "screening_date": "2024-01-14T15:00:00Z",
-  "screening_details": {
-    "matching_qualifications": ["React", "Node.js"],
-    "missing_qualifications": ["Python"],
-    "overall_fit": "Strong match"
-  }
-}`}
-                </pre>
-              </div>
-
-              {/* Job JSON */}
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-purple-600" />
-                  Job JSON Structure
-                </h4>
-                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
-{`{
-  "id": "uuid",                          // Auto-generated
-  "created_date": "2024-01-15T10:30:00Z", // Auto-generated
-  "updated_date": "2024-01-15T10:30:00Z", // Auto-generated
-  "created_by": "user@example.com",      // Auto-generated
-  
-  "title": "Senior Full Stack Developer", // Required
-  "company_id": "company-uuid",          // Required (lookup)
-  
-  "description": "We are seeking a Senior Full Stack Developer...",
-  "requirements": "5+ years experience with React and Node.js...",
-  
-  "location": "New York, NY",
-  "remote_type": "hybrid",
-  "employment_type": "full_time",
-  "rate": "$120,000 - $150,000",
-  
-  "priority": "high",
-  "status": "open",
-  
-  "required_skills": ["React", "Node.js", "TypeScript", "AWS"],
-  "preferred_skills": ["GraphQL", "Docker", "Kubernetes"],
-  
-  "experience_required": 5,
-  "positions_available": 2,
-  "hiring_manager": "Jane Smith",
-  "due_date": "2024-03-01",
-  
-  "requester_email": "hiring@company.com",
-  "requester_name": "Jane Smith",
-  "visa_restrictions": "No H1B sponsorship",
-  "location_preference": "Must be in EST timezone",
-  "salary_text": "$120K-$150K base + equity",
-  "contract_type": "w2"
-}`}
-                </pre>
-              </div>
-
-              {/* Application JSON */}
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <Send className="w-4 h-4 text-green-600" />
-                  Application JSON Structure
-                </h4>
-                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
-{`{
-  "id": "uuid",                          // Auto-generated
-  "created_date": "2024-01-15T10:30:00Z", // Auto-generated
-  "updated_date": "2024-01-15T10:30:00Z", // Auto-generated
-  "created_by": "user@example.com",      // Auto-generated
-  
-  "candidate_id": "candidate-uuid",      // Required (lookup)
-  "job_id": "job-uuid",                  // Required (lookup)
-  
-  "status": "interviewing",
-  "stage_updated_date": "2024-01-15T10:30:00Z",
-  
-  "notes": "Strong technical interview...",
-  "interview_dates": [
-    {
-      "date": "2024-01-10T14:00:00Z",
-      "type": "phone_screen",
-      "interviewer": "John Smith",
-      "notes": "Good communication skills",
-      "feedback": "Proceed to technical"
-    },
-    {
-      "date": "2024-01-15T10:00:00Z",
-      "type": "technical",
-      "interviewer": "Jane Doe",
-      "notes": "Strong coding skills",
-      "feedback": "Recommend hire"
-    }
-  ],
-  
-  "submitted_by": "recruiter@company.com",
-  "client_feedback": "Excellent candidate, proceeding to final round",
-  "rejection_reason": null,
-  
-  "match_score": 87,
-  "score_details": {
-    "technical_skills": 92,
-    "experience_match": 85,
-    "culture_fit": 90,
-    "location_compatibility": 80,
-    "strengths": ["Strong React skills", "AWS certified"],
-    "concerns": ["Limited GraphQL experience"],
-    "overall_recommendation": "Strong hire"
-  }
-}`}
-                </pre>
-              </div>
-
-              {/* Submission JSON */}
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-orange-600" />
-                  Submission JSON Structure
-                </h4>
-                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
-{`{
-  "id": "uuid",                          // Auto-generated
-  "created_date": "2024-01-15T10:30:00Z", // Auto-generated
-  "updated_date": "2024-01-15T10:30:00Z", // Auto-generated
-  "created_by": "user@example.com",      // Auto-generated
-  
-  "candidate_id": "candidate-uuid",      // Required (lookup)
-  "job_id": "job-uuid",                  // Required (lookup)
-  "recruiter_id": "recruiter-uuid",      // Required
-  
-  "submitted_date": "2024-01-15T10:30:00Z",
-  "status": "under_review",
-  
-  "client_feedback": "Reviewing resume, will schedule interview",
-  "follow_up_date": "2024-01-20",
-  "follow_up_completed": false,
-  
-  "notes": "Submitted via LinkedIn outreach",
-  "interview_dates": [],
-  
-  "client": "Acme Corp",
-  "rate": "$85/hr",
-  "technologyText": "React, Node.js, AWS"
-}`}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Integration Examples</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2">JavaScript/TypeScript (Frontend SDK)</h4>
-                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
-{`import { base44 } from '@/api/base44Client';
-
-// List candidates
+// LIST — returns array, sorted by field (prefix '-' for descending), with limit
 const candidates = await base44.entities.Candidate.list('-created_date', 50);
 
-// Filter candidates by status
+// FILTER — by field values, with sort and limit
 const activeCandidates = await base44.entities.Candidate.filter(
-  { status: 'active' }, 
-  '-updated_date', 
+  { status: 'active' },
+  '-updated_date',
   100
 );
 
-// Create candidate
+// GET — single record by ID
+const candidate = await base44.entities.Candidate.get(candidateId);
+
+// CREATE — returns created record with auto-generated id, created_date, etc.
 const newCandidate = await base44.entities.Candidate.create({
   first_name: 'John',
   last_name: 'Doe',
@@ -1302,873 +1251,247 @@ const newCandidate = await base44.entities.Candidate.create({
   status: 'active'
 });
 
-// Update candidate
+// UPDATE — partial update by ID, returns updated record
 await base44.entities.Candidate.update(candidateId, {
-  status: 'interviewing',
-  notes: 'Scheduled for technical interview'
+  status: 'screening',
+  screening_score: 87
 });
 
-// Get candidate by ID
-const candidate = await base44.entities.Candidate.get(candidateId);
+// DELETE — by ID
+await base44.entities.Candidate.delete(candidateId);
 
-// Delete candidate
-await base44.entities.Candidate.delete(candidateId);`}
-                </pre>
-              </div>
+// BULK CREATE — array of objects
+await base44.entities.Candidate.bulkCreate([
+  { first_name: 'A', last_name: 'B', email: 'a@b.com' },
+  { first_name: 'C', last_name: 'D', email: 'c@d.com' },
+]);
 
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2">cURL Examples</h4>
-                <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs">
-{`# List candidates
-curl -X GET "https://api.base44.com/entities/Candidate?limit=50&sort=-created_date" \\
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
-  -H "Content-Type: application/json"
+// SCHEMA — returns JSON schema without built-in fields
+const schema = await base44.entities.Candidate.schema();
 
-# Create candidate
-curl -X POST "https://api.base44.com/entities/Candidate" \\
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john.doe@email.com",
-    "skills": ["JavaScript", "React"],
-    "status": "active"
-  }'
-
-# Update candidate
-curl -X PUT "https://api.base44.com/entities/Candidate/{id}" \\
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "status": "interviewing",
-    "notes": "Scheduled for interview"
-  }'`}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-amber-50 border-amber-200">
-            <CardHeader>
-              <CardTitle className="text-base text-amber-900">Rate Limits & Best Practices</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-amber-800 space-y-2">
-              <div>
-                <strong>Rate Limits:</strong>
-                <ul className="list-disc list-inside ml-4 mt-1">
-                  <li>100 requests per minute per user</li>
-                  <li>1000 requests per hour per user</li>
-                  <li>Bulk operations limited to 100 records per request</li>
-                </ul>
-              </div>
-              <div>
-                <strong>Best Practices:</strong>
-                <ul className="list-disc list-inside ml-4 mt-1">
-                  <li>Use filtering and pagination to limit data transfer</li>
-                  <li>Cache frequently accessed data (roles, company lists)</li>
-                  <li>Use bulk operations for mass updates</li>
-                  <li>Implement exponential backoff for retry logic</li>
-                  <li>Always validate input data before sending requests</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: "ai-agents",
-      icon: Brain,
-      title: "NEW: AI Agent System",
-      content: (
-        <div className="space-y-4">
-          <p className="text-slate-700 leading-relaxed">
-            The AI Agent system enables intelligent, event-driven automation that can perform complex workflows,
-            AI analysis, and multi-step operations without manual intervention.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="border-l-4 border-l-purple-500">
-              <CardHeader>
-                <CardTitle className="text-base">Agent Triggers</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li><strong>Entity Events:</strong> Triggered on create, update, or delete of specific entities</li>
-                <li><strong>Scheduled:</strong> Time-based execution (hourly, daily, weekly, monthly)</li>
-                <li><strong>Manual:</strong> User-initiated execution</li>
-                <li><strong>Conditional:</strong> With status and field-based conditions</li>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-blue-500">
-              <CardHeader>
-                <CardTitle className="text-base">Agent Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li><strong>AI Analysis:</strong> Use o1, GPT-4o, Claude 4.5, or GPT-5 for reasoning</li>
-                <li><strong>Entity Operations:</strong> Create, update, query, or delete records</li>
-                <li><strong>Email Sending:</strong> Send templated or dynamic emails</li>
-                <li><strong>Task Creation:</strong> Auto-generate follow-up tasks</li>
-                <li><strong>Multi-step Workflows:</strong> Chain multiple actions together</li>
-              </CardContent>
-            </Card>
+// SUBSCRIBE — real-time updates
+const unsubscribe = base44.entities.Candidate.subscribe((event) => {
+  // event.type: 'create' | 'update' | 'delete'
+  // event.id: record ID
+  // event.data: current record data
+  console.log(event.type, event.data);
+});
+// Call unsubscribe() to clean up`} />
           </div>
 
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-base text-blue-900">Example: Job Matcher Agent</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-blue-800 space-y-2">
-              <p><strong>Trigger:</strong> When Job entity is created with status="open"</p>
-              <p><strong>Actions:</strong></p>
-              <ol className="list-decimal list-inside space-y-1 ml-4">
-                <li>Fetch all active candidates from database</li>
-                <li>Use AI (o1 reasoning model) to score each candidate against job requirements</li>
-                <li>Store match results in job metadata for instant access</li>
-                <li>Auto-create application records for top 10 matches (score ≥ 80)</li>
-              </ol>
-              <p><strong>Execution:</strong> Runs asynchronously in background with 5-minute timeout</p>
-            </CardContent>
-          </Card>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 space-y-4">
+            <p className="font-semibold text-[#1E293B] text-[14px]">Auth & User Operations</p>
+            <CodeBlock code={`import { base44 } from '@/api/base44Client';
 
-          <Card className="bg-green-50 border-green-200">
-            <CardHeader>
-              <CardTitle className="text-base text-green-900">Agent Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-green-800">
-              <p className="mb-2">Agents are configured via JSON files in the <code className="bg-white px-2 py-1 rounded">agents/</code> directory with:</p>
-              <ul className="space-y-1 ml-4">
-                <li>• Name, description, and instructions</li>
-                <li>• Trigger configuration (type, entity, conditions)</li>
-                <li>• Tool configurations (entity access permissions)</li>
-                <li>• Workflow steps with AI prompts and actions</li>
-                <li>• Execution settings (async, timeout, enabled state)</li>
-              </ul>
-            </CardContent>
-          </Card>
+// Get current user
+const user = await base44.auth.me();
+// Returns: { id, email, full_name, role, role_id, status, is_locked, ... }
 
-          <Card className="bg-purple-50 border-purple-200">
-            <CardHeader>
-              <CardTitle className="text-base text-purple-900">Agent Builder UI</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-purple-800">
-              <p className="mb-2">Accessible from <strong>Admin Controls → AI Agents</strong>:</p>
-              <ul className="space-y-1 ml-4">
-                <li>• Visual agent management with performance stats</li>
-                <li>• Drag-and-drop action builder</li>
-                <li>• AI model selection (o1, GPT-4o, Claude 4.5, GPT-5)</li>
-                <li>• Enable/disable agents with one click</li>
-                <li>• Performance tracking: runs, successes, failures, avg duration</li>
-                <li>• Pre-configured agents: Job Matcher, Follow-up Reminder, Profile Enrichment</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: "email-blast",
-      icon: MailPlus,
-      title: "NEW: Email Blast System",
-      content: (
-        <div className="space-y-4">
-          <p className="text-slate-700 leading-relaxed">
-            The Email Blast system enables recruiters and admins to create targeted email campaigns
-            for all company contacts with AI-generated content and flexible export options.
-          </p>
+// Check if authenticated
+const authed = await base44.auth.isAuthenticated(); // returns boolean
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-l-4 border-l-cyan-500">
-              <CardHeader>
-                <CardTitle className="text-base">Contact Collection</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Aggregates all contacts from Company entities</li>
-                <li>Deduplicates email addresses</li>
-                <li>Displays statistics (total companies, contacts, unique emails)</li>
-                <li>Allows selective company inclusion/exclusion</li>
-              </CardContent>
-            </Card>
+// Update current user data
+await base44.auth.updateMe({ role_id: 'some-role-id' });
 
-            <Card className="border-l-4 border-l-purple-500">
-              <CardHeader>
-                <CardTitle className="text-base">AI Content Generation</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Generates professional email content from subject line</li>
-                <li>Includes company introduction and value propositions</li>
-                <li>Adds call-to-action and service highlights</li>
-                <li>Professional signature template</li>
-              </CardContent>
-            </Card>
+// Logout (redirects to redirectUrl or reloads)
+base44.auth.logout(redirectUrl?);
 
-            <Card className="border-l-4 border-l-orange-500">
-              <CardHeader>
-                <CardTitle className="text-base">Export Options</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Copy comma-separated list to clipboard</li>
-                <li>Export to CSV file</li>
-                <li>Open in email client with pre-filled content</li>
-                <li>BCC-ready for privacy compliance</li>
-              </CardContent>
-            </Card>
+// Redirect to login
+base44.auth.redirectToLogin(nextUrl?);
+
+// Invite a user
+await base44.users.inviteUser('user@example.com', 'user'); // role: 'user' | 'admin'`} />
           </div>
 
-          <Card className="bg-amber-50 border-amber-200">
-            <CardHeader>
-              <CardTitle className="text-base text-amber-900">Usage Workflow</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-amber-800">
-              <ol className="list-decimal list-inside space-y-2 ml-2">
-                <li>Navigate to <strong>Admin Controls → Email Blast</strong></li>
-                <li>Review statistics and select target companies</li>
-                <li>Enter email subject line</li>
-                <li>Either write message manually or use <strong>AI Generate</strong> button</li>
-                <li>Review and customize AI-generated content</li>
-                <li>Copy email list (or export to CSV)</li>
-                <li>Use <strong>Open in Email Client</strong> or paste into Gmail/Outlook BCC field</li>
-                <li>Send campaign</li>
-              </ol>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: "advanced-matching",
-      icon: Target,
-      title: "NEW: Advanced AI Matching",
-      content: (
-        <div className="space-y-4">
-          <p className="text-slate-700 leading-relaxed">
-            Advanced AI-powered candidate matching with configurable weighted criteria, multiple reasoning models,
-            learning from user feedback, and comprehensive performance tracking.
-          </p>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 space-y-4">
+            <p className="font-semibold text-[#1E293B] text-[14px]">Integration Calls</p>
+            <CodeBlock code={`import { base44 } from '@/api/base44Client';
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="border-l-4 border-l-pink-500">
-              <CardHeader>
-                <CardTitle className="text-base">Matching Profiles</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li><strong>Weighted Criteria:</strong> Customize weights for 7 dimensions (technical skills, experience, seniority, domain, soft skills, education, location)</li>
-                <li><strong>Skill Importance:</strong> Mark skills as "must_have", "preferred", or "nice_to_have"</li>
-                <li><strong>Soft Skills Extraction:</strong> AI extracts leadership, communication, collaboration from notes/profiles</li>
-                <li><strong>Multiple Strategies:</strong> Balanced, Strict, Lenient, or Learning modes</li>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-indigo-500">
-              <CardHeader>
-                <CardTitle className="text-base">AI Models Available</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li><strong>OpenAI o1:</strong> Reasoning model - best for complex multi-criteria analysis</li>
-                <li><strong>Claude 4.5 Opus:</strong> Balanced performance and accuracy</li>
-                <li><strong>GPT-5 Preview:</strong> Latest capabilities with advanced understanding</li>
-                <li><strong>GPT-4o:</strong> Fast and reliable for standard matching</li>
-                <li><strong>Auto-select:</strong> System picks best model for the task</li>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-base text-blue-900">Feedback Loop & Learning</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-blue-800 space-y-2">
-              <li><strong>Star Ratings:</strong> 1-5 star feedback on match quality</li>
-              <li><strong>Action Tracking:</strong> Viewed, contacted, interviewed, hired, rejected, skipped</li>
-              <li><strong>Criteria Accuracy:</strong> Feedback on specific scoring dimensions</li>
-              <li><strong>Continuous Learning:</strong> AI adapts weights based on feedback</li>
-              <li><strong>Performance Metrics:</strong> Tracks acceptance/rejection rates and accuracy over time</li>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-green-50 border-green-200">
-            <CardHeader>
-              <CardTitle className="text-base text-green-900">Matching Component Features</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-green-800">
-              <ul className="space-y-1 ml-4">
-                <li>• Multi-dimensional scoring across all weighted criteria</li>
-                <li>• Visual progress bars for each criterion (technical skills, experience, etc.)</li>
-                <li>• Detailed strengths and concerns breakdown</li>
-                <li>• Soft skills identification from candidate profiles</li>
-                <li>• AI reasoning display (step-by-step thought process)</li>
-                <li>• Match recommendations: Strong match, good match, potential match, poor match</li>
-                <li>• Quick actions: Email candidate, view profile, provide feedback</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: "ai-quick-actions",
-      icon: Zap,
-      title: "AI Quick Actions - Detailed Specification",
-      content: (
-        <div className="space-y-4">
-          <Card className="bg-slate-50">
-            <CardHeader>
-              <CardTitle className="text-base">Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-slate-700">
-              <p className="mb-3">
-                AI Quick Actions transforms the traditional quick action button into an intelligent conversational assistant
-                that understands natural language and can perform complex operations through simple chat interactions.
-              </p>
-              <p className="font-semibold">Access: ⌘J / Ctrl+J or floating button (bottom-right)</p>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="border-l-4 border-l-blue-500">
-              <CardHeader>
-                <CardTitle className="text-base">Key Capabilities</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li><strong>Natural Language Understanding:</strong> Processes conversational requests and determines intent</li>
-                <li><strong>Context-Aware:</strong> Understands user role and permissions</li>
-                <li><strong>Multi-Intent Support:</strong> Navigation, entity creation, information queries, bulk text parsing</li>
-                <li><strong>Intelligent Data Extraction:</strong> Extracts contact details, professional info, skills, location from pasted text</li>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-green-500">
-              <CardHeader>
-                <CardTitle className="text-base">Technical Implementation</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>LLM Integration using Core.InvokeLLM with structured JSON schema</li>
-                <li>Action types: navigate, create_candidate, create_job, create_company, create_task, search</li>
-                <li>State management with conversation history for context</li>
-                <li>Permissions validation before executing actions</li>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-purple-50 border-purple-200">
-            <CardHeader>
-              <CardTitle className="text-base text-purple-900">Example Interactions</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-purple-800 space-y-3">
-              <div>
-                <p className="font-semibold">User: "Add a candidate named John Doe"</p>
-                <p className="text-xs mt-1">AI: "I'll help you add a new candidate. Opening the Candidates page with the add form..."</p>
-                <p className="text-xs text-purple-600">→ Navigates to Candidates page and triggers add form</p>
-              </div>
-              <div>
-                <p className="font-semibold">User: "Manikishore Dasari, Senior Java Developer with 11+ years..."</p>
-                <p className="text-xs mt-1">AI: "I've extracted the candidate information! Creating a new candidate record..."</p>
-                <p className="text-xs text-purple-600">→ Creates candidate with parsed data</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: "paste-to-add",
-      icon: FileText,
-      title: "Paste to Add Candidate - Detailed Specification",
-      content: (
-        <div className="space-y-4">
-          <Card className="bg-slate-50">
-            <CardHeader>
-              <CardTitle className="text-base">Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-slate-700">
-              <p>
-                Paste to Add provides a dedicated interface for quickly adding candidates by pasting resume text,
-                LinkedIn profiles, or any candidate information. AI automatically extracts structured data eliminating manual form filling.
-              </p>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="border-l-4 border-l-cyan-500">
-              <CardHeader>
-                <CardTitle className="text-base">Access Points</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li>Candidates Page: "Paste to Add" button in header toolbar (purple gradient)</li>
-                <li>AI Quick Actions: Through conversational commands</li>
-                <li>Keyboard Shortcut: Available through suggested actions</li>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-teal-500">
-              <CardHeader>
-                <CardTitle className="text-base">Data Extraction</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <li><strong>Contact Info:</strong> Name, email, phone using pattern matching</li>
-                <li><strong>Professional:</strong> Title, company, years of experience</li>
-                <li><strong>Technical Skills:</strong> Languages, frameworks, tools</li>
-                <li><strong>Work Auth:</strong> H1B, Green Card, US Citizen detection</li>
-                <li><strong>Summary:</strong> Professional bio; original text stored in notes</li>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-amber-50 border-amber-200">
-            <CardHeader>
-              <CardTitle className="text-base text-amber-900">Example Input & Output</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-amber-800">
-              <p className="mb-2"><strong>Input:</strong></p>
-              <pre className="bg-white rounded p-3 text-xs mb-3 overflow-x-auto">
-Manikishore Dasari, Senior Java/J2EE Full Stack Developer with 11+ years...
-📧 Email: manidasari104@gmail.com 📞 Phone: 469-722-1749
-Skills: Java, Spring Boot, AWS, Angular, ReactJS...
-              </pre>
-              <p className="mb-2"><strong>Extracted:</strong></p>
-              <ul className="space-y-1 ml-4 text-xs">
-                <li>• first_name: "Manikishore"</li>
-                <li>• last_name: "Dasari"</li>
-                <li>• email: "manidasari104@gmail.com"</li>
-                <li>• phone: "469-722-1749"</li>
-                <li>• current_title: "Senior Java/J2EE Full Stack Developer"</li>
-                <li>• experience_years: 11</li>
-                <li>• skills: ["Java", "Spring Boot", "AWS", "Angular", "ReactJS"...]</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: "profile-resolver",
-      icon: Search,
-      title: "Profile Resolver & Matching Engine",
-      content: (
-        <div className="space-y-4">
-          <Card className="bg-slate-50">
-            <CardHeader>
-              <CardTitle className="text-base">Business Problem & Opportunity</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-slate-700">
-              <p className="mb-2">Data is fragmented across entities; manual cross-referencing is slow and error-prone.</p>
-              <p>An intelligent resolver provides instant, actionable insights and a single source of truth.</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-base text-blue-900">Functional Requirements</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-blue-800">
-              <ul className="space-y-1 ml-4">
-                <li>• FR-001: Unified search bar in main layout</li>
-                <li>• FR-002: Parse identifiers (email, LinkedIn, name + company)</li>
-                <li>• FR-003: Parallel searches across Candidate, Recruiter, Company</li>
-                <li>• FR-004: Aggregate and deduplicate into Master Profiles with source tracking</li>
-                <li>• FR-005: Show relationships (applications, submissions, jobs)</li>
-                <li>• FR-006: Provide contextual actions (e.g., find similar candidates)</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-green-50 border-green-200">
-            <CardHeader>
-              <CardTitle className="text-base text-green-900">Power Engine Logic (Pseudocode)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs bg-white rounded p-3 overflow-x-auto text-green-900">
-{`function resolveProfile(query) {
-  // 1. Parse & Enrich Query
-  const parsedQuery = parseQueryForIdentifiers(query);
-  
-  // 2. Parallel Internal Searches
-  const [candidateResults, recruiterResults, companyResults] = 
-    await Promise.all([
-      Candidate.search(parsedQuery),
-      Recruiter.search(parsedQuery),
-      Company.search(parsedQuery.company || parsedQuery.name),
-    ]);
-  
-  // 3. Aggregate & Deduplicate
-  const masterProfiles = new Map();
-  // ... aggregation logic ...
-  
-  // 4. Map Relationships
-  for (const profile of masterProfiles.values()) {
-    const applications = await Application.filter({ 
-      candidate_id: cand.id 
-    });
-    profile.relationships.push({ 
-      type: "APPLIED_TO", 
-      records: applications 
-    });
-  }
-  
-  // 5. Return Profiles
-  return Array.from(masterProfiles.values());
-}`}
-              </pre>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    },
-    {
-      id: "non-functional",
-      icon: Shield,
-      title: "4. Non-Functional Requirements",
-      content: (
-        <div className="space-y-3 text-sm text-slate-700">
-          <li>• Responsive UI for desktop and mobile</li>
-          <li>• Security via role-based permissions; platform authentication</li>
-          <li>• Performance optimizations (throttled loaders, caching of roles, limited AI context windows)</li>
-          <li>• Reliability: allow errors to bubble for fast fixes during development</li>
-          <li>• Branding: consistent gradient header and background per Layout</li>
-          <li>• Email safety: Sends gated by Email Settings (provider connected)</li>
-          <li>• UX: ESC closes major modals; consistent focus states and keyboard support</li>
-        </div>
-      )
-    },
-    {
-      id: "integrations",
-      icon: Zap,
-      title: "7. Integrations",
-      content: (
-        <div className="space-y-3 text-sm text-slate-700">
-          <li>• <strong>Core.InvokeLLM:</strong> Summaries, Ask AI, resume and bench scoring with strict JSON responses</li>
-          <li>• <strong>Core.UploadFile:</strong> Resume/JD uploads</li>
-          <li>• <strong>Core.ExtractDataFromUploadedFile:</strong> OCR/text extraction for data import</li>
-          <li>• <strong>Core.SendEmail:</strong> Submission emails and email blasts; gated by AppSettings</li>
-        </div>
-      )
-    },
-    {
-      id: "acceptance",
-      icon: CheckCircle,
-      title: "8. Acceptance Criteria",
-      content: (
-        <div className="space-y-3 text-sm text-slate-700">
-          <li>• Users can create, edit, delete, and select views; visibility and RLS enforced</li>
-          <li>• Bulk scoring uses selected view; supports Draft/Open jobs; skips no-resume; persists scores to Candidate</li>
-          <li>• Preview "Edit" navigates to full edit; candidate status editable inline</li>
-          <li>• Recruiter role can update Candidates; audit logs capture logins and key actions</li>
-          <li>• Dashboard builder (admin) publishes global widgets; non-admins see read-only layout</li>
-          <li>• Email features disabled until Gmail/Outlook is marked connected in Email Settings</li>
-          <li className="text-purple-700 font-semibold">• NEW: AI candidate-job matching displays top 5 ranked candidates on Job Details page</li>
-          <li className="text-purple-700 font-semibold">• NEW: AI agents execute on entity creation/update with background processing</li>
-          <li className="text-purple-700 font-semibold">• NEW: Email blast collects all company contacts with deduplication and CSV export</li>
-          <li className="text-purple-700 font-semibold">• NEW: Advanced matching uses configurable weights and multiple AI models</li>
-        </div>
-      )
-    },
-    {
-      id: "future",
-      icon: TrendingUp,
-      title: "9. Future Enhancements",
-      content: (
-        <div className="space-y-3 text-sm text-slate-700">
-          <li>• Advanced semantic matching models and similarity search</li>
-          <li>• Analytics for pipeline conversion and AI score impact</li>
-          <li>• Version history for resumes, views, and configurations</li>
-          <li className="text-purple-700 font-semibold">• Enhanced interview features - video recording, automated transcription, sentiment analysis</li>
-          <li className="text-purple-700 font-semibold">• Predictive analytics - success prediction, time-to-fill forecasting, offer acceptance probability</li>
-          <li className="text-purple-700 font-semibold">• Advanced automation - auto-scheduling interviews, smart nurturing campaigns, intelligent task assignment</li>
-          <li>• AI-driven follow-up suggestions for submissions and tasks</li>
-          <li>• Global search with AI-powered semantic search and fuzzy matching</li>
-        </div>
-      )
-    },
-    {
-      id: "glossary",
-      icon: BookOpen,
-      title: "10. Glossary",
-      content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <div className="space-y-2">
-            <div><strong>Match Score:</strong> Weighted alignment between resume and JD</div>
-            <div><strong>Fit Score:</strong> AI-calculated 0-100 score for candidate-job compatibility</div>
-            <div><strong>Scope (All/Own):</strong> Whether a role acts on all records or only created_by</div>
-            <div><strong>LLM:</strong> Large Language Model for summaries and insights</div>
-            <div><strong>Live Score Calculator:</strong> Real-time interview scoring as questions are answered</div>
-          </div>
-          <div className="space-y-2">
-            <div><strong>Pipeline Health:</strong> AI-assessed recruitment pipeline state (healthy/at_risk/critical)</div>
-            <div><strong>Workload Analysis:</strong> AI evaluation of team work hours and utilization</div>
-            <div><strong>AI Quick Actions:</strong> Conversational AI assistant via ⌘J for executing actions</div>
-            <div><strong>Paste to Add:</strong> Quick candidate creation from unstructured text</div>
-            <div><strong>Matching Profile:</strong> Configurable criteria weights and AI model selection for matching</div>
-          </div>
-        </div>
-      )
+// InvokeLLM — structured JSON output
+const result = await base44.integrations.Core.InvokeLLM({
+  prompt: "Analyze this candidate for the Senior React Developer role...",
+  response_json_schema: {
+    type: "object",
+    properties: {
+      score: { type: "number" },
+      strengths: { type: "array", items: { type: "string" } },
+      concerns: { type: "array", items: { type: "string" } },
+      recommendation: { type: "string", enum: ["strong_hire", "hire", "maybe", "no_hire"] }
     }
-  ];
+  },
+  model: "auto" // or "o1", "claude-4.5", "gpt-5", "gpt-4o"
+});
 
-  return (
-    <div className="p-6 lg:p-8 space-y-6">
-      <Breadcrumbs items={[{ label: "BRD" }]} />
-      
-      <PageHeader
-        title="Business Requirements Document"
-        subtitle="Comprehensive system architecture, data model, and feature documentation"
-      />
+// UploadFile
+const { file_url } = await base44.integrations.Core.UploadFile({ file: fileBlob });
 
-      <div className="flex gap-2 border-b">
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "overview"
-              ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <FileText className="w-4 h-4 inline mr-2" />
-          Full Document
-        </button>
-        <button
-          onClick={() => setActiveTab("datamodel")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "datamodel"
-              ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <Database className="w-4 h-4 inline mr-2" />
-          Data Model
-        </button>
-        <button
-          onClick={() => setActiveTab("relationships")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "relationships"
-              ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <GitBranch className="w-4 h-4 inline mr-2" />
-          Relationships
-        </button>
-      </div>
+// ExtractDataFromUploadedFile
+const { output } = await base44.integrations.Core.ExtractDataFromUploadedFile({
+  file_url: "https://...",
+  json_schema: { type: "object", properties: { name: { type: "string" }, skills: { type: "array" } } }
+});
 
-      {activeTab === "overview" && (
-        <div className="space-y-4">
-          {documentSections.map((section) => {
-            const Icon = section.icon;
-            const isExpanded = expandedSection === section.id;
-            
-            return (
-              <Card key={section.id}>
-                <CardHeader 
-                  className="cursor-pointer hover:bg-slate-50"
-                  onClick={() => toggleSection(section.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Icon className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <CardTitle>{section.title}</CardTitle>
-                    </div>
-                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </div>
-                </CardHeader>
-                {isExpanded && (
-                  <CardContent>{section.content}</CardContent>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
+// SendEmail (requires AppSettings.provider_connected = true)
+await base44.integrations.Core.SendEmail({
+  to: "candidate@example.com",
+  subject: "Interview Invitation",
+  body: "<p>We'd like to schedule...</p>",
+  from_name: "TalentStack Recruiting"
+});`} />
+          </div>
 
-      {activeTab === "datamodel" && (
-        <div className="space-y-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input
-                  placeholder="Search entities, fields, descriptions..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 space-y-4">
+            <p className="font-semibold text-[#1E293B] text-[14px]">Backend Function: syncJobToCareers</p>
+            <CodeBlock code={`// Invoke from frontend (Platform V2 — direct import)
+import { syncJobToCareers } from "@/functions/syncJobToCareers";
 
-          {entityGroups.map((group) => {
-            const displayEntities = searchQuery
-              ? group.entities.filter(e => filteredEntities.includes(e))
-              : group.entities;
+const response = await syncJobToCareers({ job_id: "some-job-uuid" });
+// Returns: { success: true, message: "Job synced" } or { error: "..." }
 
-            if (displayEntities.length === 0) return null;
+// ── Backend function implementation (Deno) ──
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-            return (
-              <div key={group.key} className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Badge className={`bg-${group.color}-100 text-${group.color}-800`}>
-                    {group.label}
-                  </Badge>
-                  <span className="text-sm text-slate-600">
-                    {displayEntities.length} {displayEntities.length === 1 ? 'entity' : 'entities'}
-                  </span>
-                </div>
+Deno.serve(async (req) => {
+  const base44 = createClientFromRequest(req);
+  const user = await base44.auth.me();
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-                {displayEntities.map((entity) => (
-                  <EntityCard
-                    key={entity.name}
-                    entity={entity}
-                    expanded={expandedEntities[entity.name]}
-                    onToggle={() => toggleEntity(entity.name)}
-                  />
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      )}
+  const { job_id } = await req.json();
+  if (!job_id) return Response.json({ error: 'job_id required' }, { status: 400 });
 
-      {activeTab === "relationships" && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Key Entity Relationships</CardTitle>
-              <p className="text-sm text-slate-600 mt-2">
-                Understanding how entities connect to enable comprehensive talent management workflows
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
+  const job = await base44.asServiceRole.entities.Job.get(job_id);
+  const company = job.company_id
+    ? await base44.asServiceRole.entities.Company.get(job.company_id)
+    : null;
+
+  const payload = {
+    title: job.title,
+    description: job.description,
+    rate: job.rate,
+    location: job.location,
+    remote_type: job.remote_type,
+    employment_type: job.employment_type,
+    required_skills: job.required_skills,
+    client: company?.name || "Confidential",
+    status: job.status,
+  };
+
+  const res = await fetch("https://talentstack.org/api/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  return Response.json({ success: res.ok });
+});`} />
+          </div>
+
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 space-y-4">
+            <p className="font-semibold text-[#1E293B] text-[14px]">Entity JSON Structures</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <GitBranch className="w-5 h-5 text-blue-600" />
-                  Core Recruitment Flow
-                </h4>
-                <div className="bg-slate-50 rounded-lg p-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-blue-100 text-blue-800">Company</Badge>
-                    <span className="text-slate-600">→ has many →</span>
-                    <Badge className="bg-purple-100 text-purple-800">Jobs</Badge>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
-                    <span className="text-slate-600">→ applies to →</span>
-                    <Badge className="bg-purple-100 text-purple-800">Jobs</Badge>
-                    <span className="text-slate-600">→ creates →</span>
-                    <Badge className="bg-green-100 text-green-800">Application</Badge>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-orange-100 text-orange-800">Recruiter</Badge>
-                    <span className="text-slate-600">→ submits →</span>
-                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
-                    <span className="text-slate-600">→ to →</span>
-                    <Badge className="bg-purple-100 text-purple-800">Job</Badge>
-                    <span className="text-slate-600">→ creates →</span>
-                    <Badge className="bg-green-100 text-green-800">Submission</Badge>
-                  </div>
-                </div>
+                <p className="text-[12px] font-semibold text-[#475569] mb-2">Candidate (full)</p>
+                <CodeBlock code={`{
+  // Auto-generated
+  "id": "uuid",
+  "created_date": "2026-04-01T10:00:00Z",
+  "updated_date": "2026-04-01T10:00:00Z",
+  "created_by": "recruiter@agency.com",
+  
+  // Required
+  "first_name": "Sarah",
+  "last_name": "Chen",
+  "email": "sarah.chen@email.com",
+  
+  // Profile
+  "phone": "+1-555-0123",
+  "location": "SF Bay Area",
+  "linkedin_url": "https://linkedin.com/in/sarahchen",
+  "resume_url": "https://storage.../resume.pdf",
+  "current_title": "Sr. Full-Stack Engineer",
+  "current_company": "Stripe",
+  "experience_years": 8,
+  "skills": ["React", "TypeScript", "Node.js", "AWS"],
+  "salary_expectation": 180000,
+  "availability": "2_weeks",
+  "status": "active",
+  "work_authorization": "citizen",
+  "notes": "Strong payment infra background",
+  "source": "LinkedIn",
+  
+  // AI scores
+  "bench_match_score": 91,
+  "bench_score_details": { "technical_skills": 95, "experience_level": 90 },
+  "screening_score": 94,
+  "screening_date": "2026-04-01T09:00:00Z",
+  "screening_details": {
+    "matching_qualifications": ["React", "Node.js", "AWS"],
+    "missing_qualifications": ["Kubernetes"],
+    "overall_fit": "Strong match"
+  }
+}`} />
               </div>
-
               <div>
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-pink-600" />
-                  AI Matching System
-                </h4>
-                <div className="bg-slate-50 rounded-lg p-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-pink-100 text-pink-800">MatchingProfile</Badge>
-                    <span className="text-slate-600">→ defines weights for →</span>
-                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
-                    <span className="text-slate-600">+</span>
-                    <Badge className="bg-purple-100 text-purple-800">Job</Badge>
-                    <span className="text-slate-600">matching</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-pink-100 text-pink-800">MatchFeedback</Badge>
-                    <span className="text-slate-600">→ trains →</span>
-                    <Badge className="bg-pink-100 text-pink-800">MatchingProfile</Badge>
-                    <span className="text-slate-600">with user ratings</span>
-                  </div>
-                </div>
+                <p className="text-[12px] font-semibold text-[#475569] mb-2">Application (full)</p>
+                <CodeBlock code={`{
+  "id": "uuid",
+  "created_date": "2026-04-01T10:00:00Z",
+  "updated_date": "2026-04-20T14:00:00Z",
+  "created_by": "recruiter@agency.com",
+  
+  // Required
+  "candidate_id": "candidate-uuid",
+  "job_id": "job-uuid",
+  
+  // Pipeline
+  "status": "interviewing",
+  "stage_updated_date": "2026-04-18T10:00:00Z",
+  "submitted_by": "recruiter@agency.com",
+  "client_feedback": "Excellent candidate, proceeding to final",
+  
+  // Interviews
+  "interview_dates": [
+    {
+      "date": "2026-04-10T14:00:00Z",
+      "type": "phone_screen",
+      "interviewer": "John Smith",
+      "notes": "Strong communication",
+      "feedback": "Proceed to technical"
+    },
+    {
+      "date": "2026-04-18T10:00:00Z",
+      "type": "technical",
+      "interviewer": "Jane Doe",
+      "notes": "Excellent coding skills",
+      "feedback": "Recommend hire"
+    }
+  ],
+  
+  // AI matching
+  "match_score": 94,
+  "score_details": {
+    "technical_skills": 96,
+    "experience_match": 92,
+    "culture_fit": 90,
+    "location_compatibility": 100,
+    "strengths": ["React/Node — 8 yrs", "Stripe background"],
+    "concerns": ["No Kubernetes exp"],
+    "recommendation": "Strong hire"
+  }
+}`} />
               </div>
+            </div>
+          </div>
 
-              <div>
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-green-600" />
-                  Communication & Workflow
-                </h4>
-                <div className="bg-slate-50 rounded-lg p-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
-                    <span className="text-slate-600">← receives ←</span>
-                    <Badge className="bg-cyan-100 text-cyan-800">OutreachMessage</Badge>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-green-100 text-green-800">Task</Badge>
-                    <span className="text-slate-600">→ can link to →</span>
-                    <span className="text-slate-600">[Candidate | Job | Company | Submission]</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-cyan-100 text-cyan-800">InterviewSession</Badge>
-                    <span className="text-slate-600">→ connects →</span>
-                    <Badge className="bg-blue-100 text-blue-800">Candidate</Badge>
-                    <span className="text-slate-600">+</span>
-                    <Badge className="bg-purple-100 text-purple-800">Job</Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-orange-600" />
-                  Admin & Security
-                </h4>
-                <div className="bg-slate-50 rounded-lg p-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-orange-100 text-orange-800">User</Badge>
-                    <span className="text-slate-600">→ has one →</span>
-                    <Badge className="bg-orange-100 text-orange-800">Role</Badge>
-                    <span className="text-slate-600">→ defines permissions</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm flex-wrap">
-                    <Badge className="bg-cyan-100 text-cyan-800">EmailTemplate</Badge>
-                    <span className="text-slate-600">→ used by →</span>
-                    <Badge className="bg-green-100 text-green-800">AutomationRule</Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="p-6">
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <Database className="w-5 h-5 text-blue-600" />
-                Built-in System Fields
-              </h4>
-              <p className="text-sm text-slate-600 mb-3">
-                Every entity automatically includes these system-managed fields:
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-slate-50 rounded p-3">
-                  <div className="font-mono text-xs font-semibold mb-1">id</div>
-                  <div className="text-xs text-slate-600">Unique identifier (UUID)</div>
-                </div>
-                <div className="bg-slate-50 rounded p-3">
-                  <div className="font-mono text-xs font-semibold mb-1">created_date</div>
-                  <div className="text-xs text-slate-600">Creation timestamp (ISO 8601)</div>
-                </div>
-                <div className="bg-slate-50 rounded p-3">
-                  <div className="font-mono text-xs font-semibold mb-1">updated_date</div>
-                  <div className="text-xs text-slate-600">Last update timestamp</div>
-                </div>
-                <div className="bg-slate-50 rounded p-3">
-                  <div className="font-mono text-xs font-semibold mb-1">created_by</div>
-                  <div className="text-xs text-slate-600">Creator user email</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <InfoCard color="orange" title="Rate Limits & Best Practices">
+            <li>100 requests/minute per user; 1000 requests/hour per user (Base44 platform limits)</li>
+            <li>Bulk operations limited to 100 records per request</li>
+            <li>Use filter() with specific fields + sort + limit to minimize data transfer</li>
+            <li>Cache frequently accessed data (roles via rolesCache, company lists)</li>
+            <li>Use bulkCreate for mass inserts; avoid N+1 create loops</li>
+            <li>Implement loading guards (dashGuard pattern) to prevent duplicate concurrent fetches</li>
+            <li>React Query for automatic deduplication and background refetching</li>
+          </InfoCard>
         </div>
       )}
     </div>
