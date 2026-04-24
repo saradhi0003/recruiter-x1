@@ -1,0 +1,107 @@
+{
+  "name": "AIRecruiterRun",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Related Job ID"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "gmail",
+        "zoho",
+        "inbound_email",
+        "app"
+      ],
+      "default": "manual",
+      "description": "Source of the job"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "ID of the source record (email, zoho ID, etc)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "started",
+        "parsed",
+        "matched",
+        "draft_created",
+        "approved",
+        "completed",
+        "failed"
+      ],
+      "default": "started",
+      "description": "Current status of the run"
+    },
+    "selected_candidate_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs of selected candidates"
+    },
+    "match_count": {
+      "type": "number",
+      "description": "Total candidates matched"
+    },
+    "draft_count": {
+      "type": "number",
+      "description": "Number of drafts created"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Summary of the run"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Error message if run failed"
+    },
+    "model_used": {
+      "type": "string",
+      "description": "LLM model used (gpt-4o, gpt-5-mini, etc)"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When run started"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When run completed"
+    }
+  },
+  "required": [
+    "job_id",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

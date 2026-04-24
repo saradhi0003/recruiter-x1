@@ -1,0 +1,70 @@
+{
+  "name": "AIRecruiterSettings",
+  "type": "object",
+  "properties": {
+    "default_model": {
+      "type": "string",
+      "default": "gpt-4o-mini",
+      "description": "Default LLM model"
+    },
+    "matching_model": {
+      "type": "string",
+      "default": "gpt-4o-mini",
+      "description": "Model for candidate matching"
+    },
+    "drafting_model": {
+      "type": "string",
+      "default": "gpt-4o",
+      "description": "Model for email drafting"
+    },
+    "parsing_model": {
+      "type": "string",
+      "default": "gpt-4o-mini",
+      "description": "Model for job parsing"
+    },
+    "max_candidates": {
+      "type": "number",
+      "default": 50,
+      "description": "Maximum candidates to return in match results"
+    },
+    "minimum_match_score": {
+      "type": "number",
+      "default": 50,
+      "description": "Minimum score to include in results"
+    },
+    "require_human_approval": {
+      "type": "boolean",
+      "default": true,
+      "description": "Require human approval before any action"
+    },
+    "gmail_draft_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable Gmail draft sync (future feature)"
+    },
+    "zoho_sync_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable Zoho sync (future feature)"
+    },
+    "openai_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Use OpenAI for matching and drafting"
+    },
+    "fallback_to_base44_llm": {
+      "type": "boolean",
+      "default": true,
+      "description": "Fall back to Base44 LLM if OpenAI fails"
+    }
+  },
+  "rls": {
+    "read": {},
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  },
+  "required": []
+}

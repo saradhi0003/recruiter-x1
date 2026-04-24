@@ -1,0 +1,127 @@
+{
+  "name": "EmailDraft",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Related AIRecruiterRun ID"
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Related Job ID"
+    },
+    "candidate_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs of candidates included in draft"
+    },
+    "company_id": {
+      "type": "string",
+      "description": "Related Company ID if applicable"
+    },
+    "draft_type": {
+      "type": "string",
+      "enum": [
+        "client_submission",
+        "candidate_outreach",
+        "follow_up",
+        "internal_note"
+      ],
+      "description": "Type of email draft"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "app",
+        "gmail",
+        "zoho"
+      ],
+      "default": "app",
+      "description": "Destination channel"
+    },
+    "to_email": {
+      "type": "string",
+      "description": "Recipient email address"
+    },
+    "cc": {
+      "type": "string",
+      "description": "CC recipients"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Email subject line"
+    },
+    "body": {
+      "type": "string",
+      "description": "Email body content"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "approved",
+        "rejected",
+        "sent"
+      ],
+      "default": "draft",
+      "description": "Draft status"
+    },
+    "external_draft_id": {
+      "type": "string",
+      "description": "ID from external system (Gmail, Zoho)"
+    },
+    "created_by_ai": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether AI generated this draft"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Email of approver"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When draft was approved"
+    },
+    "model_used": {
+      "type": "string",
+      "description": "LLM model used for drafting"
+    }
+  },
+  "required": [
+    "run_id",
+    "job_id",
+    "draft_type",
+    "subject",
+    "body"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

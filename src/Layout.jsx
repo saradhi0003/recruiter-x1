@@ -680,6 +680,7 @@ export default function Layout({ children, currentPageName }) {
 
             <div style={{ height:1, background:'#E5E5EA', margin:'5px 10px' }} />
             <div style={{ fontSize:11, fontWeight:600, letterSpacing:'.01em', color:'#86868B', padding:'10px 10px 4px', textTransform:'uppercase' }}>Intelligence</div>
+            <NavItem to="/AIRecruiter" icon={BrainCircuit} label="AI Recruiter" active={location.pathname === "/AIRecruiter"} badge="Beta" badgeColor="blue" />
             <NavItem to={createPageUrl("AIAgents")} icon={Brain} label="AI Agents" active={location.pathname === createPageUrl("AIAgents")} badge="3" badgeColor="blue" />
             <NavItem to={createPageUrl("AutomationRules")} icon={Zap} label="Automation" active={location.pathname === createPageUrl("AutomationRules")} />
             <NavItem to={createPageUrl("EmailInbox")} icon={Mail} label="Email Inbox" active={location.pathname === createPageUrl("EmailInbox")} />
@@ -753,7 +754,8 @@ export default function Layout({ children, currentPageName }) {
           <header className="rx-topbar">
             <div style={{ fontSize:17, fontWeight:700, color:'#1D1D1F', letterSpacing:'-.022em', flexShrink:0 }}>
               {navigationItems.find(n => location.pathname === n.url)?.title ||
-               (location.pathname.includes('Dashboard') ? 'Dashboard' :
+               (location.pathname === '/AIRecruiter' ? 'AI Recruiter' :
+                location.pathname.includes('Dashboard') ? 'Dashboard' :
                 location.pathname.includes('Candidates') ? 'Candidates' :
                 location.pathname.includes('Jobs') ? 'Jobs' :
                 location.pathname.includes('Companies') ? 'Connections' :

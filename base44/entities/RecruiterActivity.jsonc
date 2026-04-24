@@ -1,0 +1,87 @@
+{
+  "name": "RecruiterActivity",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Related AIRecruiterRun ID if applicable"
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "job",
+        "candidate",
+        "submission",
+        "email",
+        "task",
+        "system"
+      ],
+      "description": "Type of entity involved"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the entity"
+    },
+    "activity_type": {
+      "type": "string",
+      "enum": [
+        "ai_job_parsed",
+        "ai_candidates_matched",
+        "ai_candidate_selected",
+        "ai_email_draft_created",
+        "ai_email_draft_approved",
+        "ai_email_draft_rejected",
+        "ai_submission_created",
+        "ai_task_created",
+        "ai_error",
+        "manual_action"
+      ],
+      "description": "Type of activity"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short title for activity"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Additional metadata"
+    }
+  },
+  "required": [
+    "entity_type",
+    "entity_id",
+    "activity_type",
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

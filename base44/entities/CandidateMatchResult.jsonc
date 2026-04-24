@@ -1,0 +1,128 @@
+{
+  "name": "CandidateMatchResult",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Related AIRecruiterRun ID"
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Related Job ID"
+    },
+    "candidate_id": {
+      "type": "string",
+      "description": "Related Candidate ID"
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Match score 0-100"
+    },
+    "recommendation": {
+      "type": "string",
+      "enum": [
+        "strong_submit",
+        "maybe",
+        "not_recommended"
+      ],
+      "description": "AI recommendation"
+    },
+    "matched_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Skills that match"
+    },
+    "missing_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Required skills missing"
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Potential red flags or concerns"
+    },
+    "strengths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Candidate strengths"
+    },
+    "weaknesses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Candidate weaknesses"
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "AI generated summary"
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Detailed explanation of match"
+    },
+    "model_used": {
+      "type": "string",
+      "description": "LLM model used for matching"
+    },
+    "recruiter_feedback": {
+      "type": "string",
+      "description": "Recruiter feedback on match"
+    },
+    "recruiter_action": {
+      "type": "string",
+      "enum": [
+        "none",
+        "selected",
+        "rejected",
+        "submitted",
+        "contacted"
+      ],
+      "default": "none",
+      "description": "Action recruiter took"
+    }
+  },
+  "required": [
+    "run_id",
+    "job_id",
+    "candidate_id",
+    "score"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
