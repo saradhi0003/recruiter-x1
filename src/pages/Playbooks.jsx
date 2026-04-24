@@ -120,7 +120,8 @@ export default function PlaybooksPage() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background: "#F5F5F7", minHeight: "100vh" }}>
+      <div style={{ padding: "20px 24px", background: "#fff", borderBottom: "1px solid #E5E5EA" }}>
       <Breadcrumbs items={[{ label: "Playbooks" }]} />
 
       <PageHeader
@@ -309,6 +310,7 @@ export default function PlaybooksPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

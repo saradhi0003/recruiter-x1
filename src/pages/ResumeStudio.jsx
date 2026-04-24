@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -517,7 +516,8 @@ For candidates with high potential but skill gaps:
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
   return (
-    <div className="p-4 lg:p-6 space-y-4">
+    <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background: "#F5F5F7", minHeight: "100vh" }}>
+      <div style={{ padding: "20px 24px", background: "#fff", borderBottom: "1px solid #E5E5EA" }}>
       <Breadcrumbs items={[{ label: "Resume & Skills Studio", icon: FileText }]} />
       
       <PageHeader
@@ -1251,6 +1251,7 @@ For candidates with high potential but skill gaps:
           )}
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

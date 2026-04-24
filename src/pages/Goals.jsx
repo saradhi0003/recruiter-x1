@@ -82,19 +82,21 @@ export default function GoalsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background: "#F5F5F7", minHeight: "100vh" }}>
+      <div style={{ padding: "20px 24px", background: "#fff", borderBottom: "1px solid #E5E5EA" }}>
       <PageHeader
         title="Goals"
         subtitle="Track and manage team goals"
         right={
-          <Button onClick={() => { setEditingGoal(null); setFormOpen(true); }} className="clay-button">
+          <Button onClick={() => { setEditingGoal(null); setFormOpen(true); }} style={{ background: "#0071E3", color: "#fff", border: "none", borderRadius: 20, fontWeight: 600, fontSize: 13, padding: "7px 18px" }}>
             <Plus className="w-4 h-4 mr-2" />
             Add Goal
           </Button>
         }
       />
+      </div>
 
-      <div className="clay-surface p-6">
+      <div style={{ padding: "20px 24px" }}>
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />

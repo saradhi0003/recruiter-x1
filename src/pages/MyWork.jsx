@@ -259,7 +259,8 @@ export default function MyWork() {
   const submittedTimesheets = myTimesheets.filter(t => t.status === "submitted");
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background: "#F5F5F7", minHeight: "100vh" }}>
+      <div style={{ padding: "20px 24px" }}>
       <PageHeader
         title="My Work"
         subtitle="Manage your time, leave requests, and approvals"
@@ -269,6 +270,22 @@ export default function MyWork() {
         <Card><CardContent className="p-6 text-slate-600">Sign in to view your work.</CardContent></Card>
       ) : (
         <>
+          {/* Metrics bar */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", background: "#fff", borderBottom: "1px solid #E5E5EA", borderRadius: "12px", marginBottom: 20, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,.05)" }}>
+            {[
+              { label: "Week Hours",      value: weekHours.toFixed(1),       sub: "logged time",        color: "#2563EB" },
+              { label: "Month Approved",  value: monthApprovedHours.toFixed(1), sub: "hours approved",   color: "#16A34A" },
+              { label: "Pending Leave",   value: monthPendingLeaves,         sub: "awaiting approval",  color: "#D97706" },
+              { label: "Draft Entries",   value: draftTimesheets.length,     sub: "not submitted",      color: "#8B5CF6" },
+            ].map((m, i) => (
+              <div key={i} style={{ padding: "22px 28px", borderRight: i < 3 ? "1px solid #E5E5EA" : "none" }}>
+                <div style={{ fontSize: 11.5, fontWeight: 500, color: "#86868B", marginBottom: 5 }}>{m.label}</div>
+                <div style={{ fontSize: 42, fontWeight: 700, letterSpacing: "-.04em", lineHeight: 1, color: m.color }}>{m.value}</div>
+                <div style={{ fontSize: 11.5, color: "#86868B", marginTop: 6 }}>{m.sub}</div>
+              </div>
+            ))}
+          </div>
+
           {/* Overview mini-dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
@@ -583,6 +600,7 @@ export default function MyWork() {
       {showLeaveForm && (
         <LeaveForm onSave={submitLeave} onCancel={()=>setShowLeaveForm(false)} />
       )}
+      </div>
     </div>
   );
 }
