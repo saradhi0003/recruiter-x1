@@ -1,60 +1,17 @@
-import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // Added useNavigate
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Users,
-  Briefcase,
-  Building2,
-  BarChart3,
-  Settings,
-  User,
-  LogOut,
-  Search,
-  Bell,
-  Send,
-  CheckSquare,
-  BookOpen,
-  BrainCircuit,
-  FileText,
-  Mail,
-  Clock,
-  CheckCircle,
-  Wallet,
-  Receipt,
-  Pin,
-  PinOff,
-  ChevronsLeft,
-  ChevronsRight,
-  Zap, // Added Zap icon for Automation Rules
-  AlertTriangle, // Added AlertTriangle icon for Duplicate Manager
-  Loader2, // Added Loader2 for loading state
-  Brain, // Added Brain icon for AI Agents
-  MailPlus, // Added MailPlus icon for Email Blast
+  Users, Briefcase, Building2, BarChart3, Settings, User, LogOut,
+  Search, Bell, Send, CheckSquare, BookOpen, BrainCircuit, FileText,
+  Mail, Clock, CheckCircle, Wallet, Receipt, Zap, AlertTriangle,
+  Loader2, Brain, MailPlus, MoreHorizontal,
 } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Assistant from "@/components/ai/Assistant";
 import { PermissionsProvider } from "@/components/common/PermissionsContext";
 import { usePermissions } from "@/components/common/PermissionsContext";
@@ -142,65 +99,42 @@ const navigationItems = [
   }
 ];
 
-// Permission-aware Accounts section for the sidebar
-function AccountsNav({ location, collapsed }) {
+// Nav item for new design
+function NavItem({ to, icon: Icon, label, badge, badgeColor, active }) {
+  const badgeCls = badgeColor === 'blue' ? 'bg-blue-50 text-[#0071E3]'
+    : badgeColor === 'green' ? 'bg-green-50 text-green-600'
+    : badgeColor === 'orange' ? 'bg-orange-50 text-orange-500'
+    : 'bg-[#F5F5F7] text-[#6E6E73]';
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-2 px-2.5 py-[7px] rounded-[10px] text-[13.5px] font-medium transition-all duration-130 select-none group ${
+        active
+          ? 'bg-[rgba(0,113,227,.08)] text-[#0071E3] font-semibold'
+          : 'text-[#6E6E73] hover:bg-black/5 hover:text-[#1D1D1F]'
+      }`}
+    >
+      <Icon className={`w-[15px] h-[15px] flex-shrink-0 ${active ? 'text-[#0071E3]' : 'text-[#86868B] group-hover:text-[#6E6E73]'}`} />
+      <span className="flex-1 truncate">{label}</span>
+      {badge !== undefined && (
+        <span className={`text-[11px] font-semibold px-[7px] py-px rounded-[10px] ml-auto ${badgeCls}`}>{badge}</span>
+      )}
+    </Link>
+  );
+}
+
+// Permission-aware Accounts section
+function AccountsNav({ location }) {
   const { can } = usePermissions();
   const showInvoices = can("Invoice", "view");
   const showExpenses = can("Expense", "view");
   if (!showInvoices && !showExpenses) return null;
-
   return (
-    <SidebarGroup className="mt-2">
-      <SidebarGroupLabel className={`sidebar-group-label text-[10px] font-semibold text-[#475569] uppercase tracking-widest px-3 py-2 ${collapsed ? "hidden" : ""}`}>
-        Accounts
-      </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu className="space-y-1">
-          {showInvoices && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className={`transition-all duration-150 rounded-md ${
-                  location.pathname === createPageUrl("Invoices")
-                    ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                    : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                } ${collapsed ? "justify-center px-2" : ""}`}
-              >
-                <Link
-                  to={createPageUrl("Invoices")}
-                  title={collapsed ? "Invoices" : undefined}
-                  className={`flex items-center gap-3 ${collapsed ? "px-0 py-2.5" : "px-3 py-2.5"}`}
-                >
-                  <Receipt className="w-5 h-5" />
-                  <span className={`font-medium sidebar-label ${collapsed ? "hidden" : "inline"}`}>Invoices</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-          {showExpenses && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className={`transition-all duration-150 rounded-md ${
-                  location.pathname === createPageUrl("Expenses")
-                    ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                    : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                } ${collapsed ? "justify-center px-2" : ""}`}
-              >
-                <Link
-                  to={createPageUrl("Expenses")}
-                  title={collapsed ? "Expenses" : undefined}
-                  className={`flex items-center gap-3 ${collapsed ? "px-0 py-2.5" : "px-3 py-2.5"}`}
-                >
-                  <Wallet className="w-5 h-5" />
-                  <span className={`font-medium sidebar-label ${collapsed ? "hidden" : "inline"}`}>Expenses</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <div>
+      <div className="text-[11px] font-semibold text-[#86868B] uppercase tracking-[.01em] px-2.5 py-[10px] pt-3">Accounts</div>
+      {showInvoices && <NavItem to={createPageUrl("Invoices")} icon={Receipt} label="Invoices" active={location.pathname === createPageUrl("Invoices")} />}
+      {showExpenses && <NavItem to={createPageUrl("Expenses")} icon={Wallet} label="Expenses" active={location.pathname === createPageUrl("Expenses")} />}
+    </div>
   );
 }
 
@@ -722,482 +656,225 @@ export default function Layout({ children, currentPageName }) {
   // Show loading while checking access
   if (checkingAccess && !me) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F5F7' }}>
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-slate-600">Verifying access...</p>
+          <Loader2 className="w-10 h-10 animate-spin mx-auto mb-3" style={{ color: '#0071E3' }} />
+          <p style={{ color: '#6E6E73', fontSize: 13 }}>Verifying access…</p>
         </div>
       </div>
     );
   }
 
+  const initials = me?.full_name
+    ? me.full_name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
+    : (me?.email ? me.email[0].toUpperCase() : 'U');
+
   return (
     <PermissionsProvider>
-      <SidebarProvider>
-        <div
-          className="min-h-screen flex w-full gap-4 lg:gap-6"
-          style={{ backgroundColor: "#F8FAFC" }}
-        >
-          <style>{`
-            :root {
-              --brand-blue: #2563EB;
-              --brand-dark: #1E293B;
-            }
-
-            .app-sidebar {
-              transition: width .2s ease, padding .2s ease;
-              will-change: width;
-              background: #0F172A;
-              border-right: 1px solid #1E293B;
-            }
-            .app-sidebar[data-collapsed="true"] { width: 60px; }
-            .app-sidebar[data-collapsed="false"] { width: 260px; }
-
-            .sidebar-label { transition: opacity .15s ease; }
-            [data-collapsed="true"] .sidebar-label { opacity: 0; display: none; }
-            [data-collapsed="true"] .sidebar-group-label { display: none; }
-            [data-collapsed="true"] .sidebar-icon-center { justify-content: center !important; }
-
-            .clay-button {
-              border-radius: 6px;
-              background: #1E293B;
-              border: 1px solid #334155;
-              transition: background .15s ease;
-            }
-            .clay-button:hover { background: #334155; }
-            
-            .clay-surface {
-              background: #ffffff;
-              border: 1px solid #E2E8F0;
-            }
-
-            @media (max-width: 1023px) {
-              .app-sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                height: 100vh;
-                z-index: 1000;
-                transform: translateX(-100%);
-                width: min(280px, 80vw);
-              }
-              .app-sidebar[data-collapsed="false"] {
-                transform: translateX(0);
-              }
-              .sidebar-backdrop {
-                position: fixed;
-                inset: 0;
-                background: rgba(0,0,0,.5);
-              }
-            }
-          `}</style>
-
-          {typeof window !== "undefined" &&
-            window.innerWidth < 1024 &&
-            !sidebarCollapsed && (
-              <div className="sidebar-backdrop" onClick={() => setSidebarCollapsed(true)} />
-            )
+      <div className="flex h-screen overflow-hidden" style={{ background: '#F5F5F7', fontFamily: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif" }}>
+        <style>{`
+          .rx-sidebar { width:240px; height:100vh; background:rgba(255,255,255,.85); backdrop-filter:blur(24px) saturate(180%); border-right:1px solid #E5E5EA; display:flex; flex-direction:column; flex-shrink:0; z-index:20; }
+          .rx-topbar { height:52px; background:rgba(255,255,255,.85); backdrop-filter:blur(24px) saturate(180%); border-bottom:1px solid #E5E5EA; display:flex; align-items:center; padding:0 22px; gap:12px; flex-shrink:0; }
+          .rx-nav-scroll { flex:1; overflow-y:auto; overflow-x:hidden; padding:8px; scrollbar-width:none; }
+          .rx-nav-scroll::-webkit-scrollbar { display:none; }
+          @keyframes rx-page-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+          .rx-page-in { animation: rx-page-in 280ms cubic-bezier(.25,.46,.45,.94) both; }
+          @media (max-width:1023px) {
+            .rx-sidebar { position:fixed; left:0; top:0; transform:translateX(-100%); transition:transform .22s ease; }
+            .rx-sidebar.open { transform:translateX(0); }
           }
+        `}</style>
 
-          <Sidebar
-            className={`app-sidebar border-r border-slate-200 ${sidebarCollapsed ? "px-2" : ""} clay-surface`}
-            data-collapsed={sidebarCollapsed ? "true" : "false"}
-          >
-            <SidebarHeader className={`border-b border-[#1E293B] ${sidebarCollapsed ? "px-2 py-4" : "p-5"}`}>
-              <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"} gap-3`}>
-                <div className="flex items-center gap-3">
-                  <img
-                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b3b1fb7f6f404f0a2709aa/0f7c64ed2_IMG_8954.jpg"
-                    alt="Talent Stack"
-                    className="w-8 h-8 rounded-lg object-contain bg-white"
-                  />
-                  {!sidebarCollapsed && (
-                    <div>
-                      <h2 className="font-semibold text-white text-[15px]" style={{ fontFamily: 'var(--font-display)' }}>Recruiter X</h2>
-                      <p className="text-[11px] text-[#475569]">Talent Platform</p>
-                    </div>
-                  )}
-                </div>
+        {/* ── SIDEBAR ── */}
+        <aside className="rx-sidebar">
+          {/* Logo */}
+          <div style={{ height:52, display:'flex', alignItems:'center', gap:9, padding:'0 18px', borderBottom:'1px solid #E5E5EA', flexShrink:0 }}>
+            <div style={{ width:28, height:28, background:'#1D1D1F', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#fff', letterSpacing:'-.04em', flexShrink:0 }}>RX</div>
+            <div style={{ fontSize:15, fontWeight:700, color:'#1D1D1F', letterSpacing:'-.022em' }}>Recruiter<span style={{ color:'#0071E3' }}> X</span></div>
+          </div>
+
+          {/* Nav */}
+          <nav className="rx-nav-scroll">
+            <div style={{ fontSize:11, fontWeight:600, letterSpacing:'.01em', color:'#86868B', padding:'10px 10px 4px', textTransform:'uppercase' }}>Workspace</div>
+            <NavItem to={createPageUrl("Dashboard")} icon={BarChart3} label="Dashboard" active={location.pathname === createPageUrl("Dashboard")} badge="Live" badgeColor="blue" />
+            <NavItem to={createPageUrl("Candidates")} icon={Users} label="Candidates" active={location.pathname === createPageUrl("Candidates")} />
+            <NavItem to={createPageUrl("Jobs")} icon={Briefcase} label="Jobs" active={location.pathname === createPageUrl("Jobs")} />
+            <NavItem to={createPageUrl("Companies")} icon={Building2} label="Connections" active={location.pathname === createPageUrl("Companies")} />
+            <NavItem to={createPageUrl("Submissions")} icon={Send} label="Applications" active={location.pathname === createPageUrl("Submissions")} />
+            <NavItem to={createPageUrl("Tasks")} icon={CheckSquare} label="Tasks" active={location.pathname === createPageUrl("Tasks")} />
+            <NavItem to={createPageUrl("ResumeStudio")} icon={BrainCircuit} label="Resume Studio" active={location.pathname === createPageUrl("ResumeStudio")} />
+            <NavItem to={createPageUrl("MyWork")} icon={Clock} label="My Work" active={location.pathname === createPageUrl("MyWork")} />
+            <NavItem to={createPageUrl("Playbooks")} icon={BookOpen} label="Playbooks" active={location.pathname === createPageUrl("Playbooks")} />
+            <NavItem to={createPageUrl("Goals")} icon={CheckCircle} label="Goals" active={location.pathname === createPageUrl("Goals")} />
+            <NavItem to={createPageUrl("DuplicateManager")} icon={AlertTriangle} label="Duplicates" active={location.pathname === createPageUrl("DuplicateManager")} />
+            <NavItem to={createPageUrl("EmailSettings")} icon={Mail} label="Email Settings" active={location.pathname === createPageUrl("EmailSettings")} />
+
+            <div style={{ height:1, background:'#E5E5EA', margin:'5px 10px' }} />
+            <div style={{ fontSize:11, fontWeight:600, letterSpacing:'.01em', color:'#86868B', padding:'10px 10px 4px', textTransform:'uppercase' }}>Intelligence</div>
+            <NavItem to={createPageUrl("AIAgents")} icon={Brain} label="AI Agents" active={location.pathname === createPageUrl("AIAgents")} badge="3" badgeColor="blue" />
+            <NavItem to={createPageUrl("AutomationRules")} icon={Zap} label="Automation" active={location.pathname === createPageUrl("AutomationRules")} />
+            <NavItem to={createPageUrl("EmailInbox")} icon={Mail} label="Email Inbox" active={location.pathname === createPageUrl("EmailInbox")} />
+
+            {isAdmin && (
+              <>
+                <div style={{ height:1, background:'#E5E5EA', margin:'5px 10px' }} />
+                <div style={{ fontSize:11, fontWeight:600, letterSpacing:'.01em', color:'#86868B', padding:'10px 10px 4px', textTransform:'uppercase' }}>Admin</div>
+                <NavItem to={createPageUrl("AccessControl?hide_badge=true")} icon={Settings} label="Access Control" active={location.pathname === createPageUrl("AccessControl")} />
+                <NavItem to={createPageUrl("Approvals")} icon={CheckCircle} label="Approvals" active={location.pathname === createPageUrl("Approvals")} />
+                <NavItem to={createPageUrl("JobStack")} icon={Briefcase} label="Job Stack" active={location.pathname === createPageUrl("JobStack")} />
+                <NavItem to={createPageUrl("EmailBlast")} icon={MailPlus} label="Email Blast" active={location.pathname === createPageUrl("EmailBlast")} />
+                <NavItem to={createPageUrl("BRD")} icon={FileText} label="BRD" active={location.pathname === createPageUrl("BRD")} />
+              </>
+            )}
+
+            <AccountsNav location={location} />
+          </nav>
+
+          {/* Quick Stats */}
+          {!skipQuickStats && (
+            <div style={{ padding:'8px 18px', borderTop:'1px solid #E5E5EA' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'3px 0' }}>
+                <span style={{ fontSize:12, color:'#86868B' }}>Active Roles</span>
+                <span style={{ fontSize:12, fontWeight:600, color:'#0071E3' }}>
+                  {qsLoading ? '—' : quickStats.activeJobs}
+                </span>
               </div>
-            </SidebarHeader>
-
-            <SidebarContent className={`${sidebarCollapsed ? "px-2" : "p-4"}`}>
-              <div className={`flex ${sidebarCollapsed ? "justify-center" : "justify-end"} ${sidebarCollapsed ? "px-0 pt-2" : "px-2 pt-2"} mb-1`}>
-                <div className="inline-flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="clay-button h-7 w-7"
-                    onClick={toggleSidebar}
-                    title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                    aria-label="Toggle sidebar"
-                    aria-pressed={!sidebarCollapsed}
-                  >
-                    {sidebarCollapsed ? <ChevronsRight className="w-3.5 h-3.5" /> : <ChevronsLeft className="w-3.5 h-3.5" />}
-                  </Button>
-                  {!sidebarCollapsed && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`clay-button h-7 w-7 ${sidebarPinned ? "text-blue-700" : "text-slate-600"}`}
-                      onClick={togglePin}
-                      title={sidebarPinned ? "Unpin sidebar" : "Pin sidebar"}
-                      aria-label={sidebarPinned ? "Unpin sidebar" : "Pin sidebar"}
-                      aria-pressed={sidebarPinned}
-                    >
-                      {sidebarPinned ? <Pin className="w-3.5 h-3.5" /> : <PinOff className="w-3.5 h-3.5" />}
-                    </Button>
-                  )}
-                </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'3px 0' }}>
+                <span style={{ fontSize:12, color:'#86868B' }}>New Candidates</span>
+                <span style={{ fontSize:12, fontWeight:600, color:'#30A14E' }}>
+                  {qsLoading ? '—' : quickStats.newCandidates}
+                </span>
               </div>
-
-              <SidebarGroup>
-                <SidebarGroupLabel className={`sidebar-group-label text-[10px] font-semibold text-[#475569] uppercase tracking-widest ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
-                  Recruitment
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu className="space-y-1">
-                    {navigationItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-150 rounded-md ${
-                            location.pathname === item.url
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={item.url}
-                            title={sidebarCollapsed ? item.title : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <item.icon className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              {isAdmin && (
-                <SidebarGroup className="mt-6">
-                  <SidebarGroupLabel className={`sidebar-group-label text-[10px] font-semibold text-[#475569] uppercase tracking-widest ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
-                    Administration
-                  </SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu className="space-y-1">
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-150 rounded-md ${
-                            location.pathname === createPageUrl("AccessControl")
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={createPageUrl("AccessControl?hide_badge=true")}
-                            title={sidebarCollapsed ? "Access Control" : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <Settings className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>Access Control</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-150 rounded-md ${
-                            location.pathname === createPageUrl("Approvals")
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={createPageUrl("Approvals")}
-                            title={sidebarCollapsed ? "Approvals" : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <CheckCircle className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>Approvals</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-200 rounded-lg ${
-                            location.pathname === createPageUrl("JobStack")
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={createPageUrl("JobStack")}
-                            title={sidebarCollapsed ? "Job Stack (Public)" : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <Briefcase className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>Job Stack (Public)</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-200 rounded-lg ${
-                            location.pathname === createPageUrl("AIAgents")
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={createPageUrl("AIAgents")}
-                            title={sidebarCollapsed ? "AI Agents" : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <Brain className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>AI Agents</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-200 rounded-lg ${
-                            location.pathname === createPageUrl("EmailBlast")
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={createPageUrl("EmailBlast")}
-                            title={sidebarCollapsed ? "Email Blast" : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <MailPlus className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>Email Blast</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-200 rounded-lg ${
-                            location.pathname === createPageUrl("AutomationRules")
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={createPageUrl("AutomationRules")}
-                            title={sidebarCollapsed ? "Automation Rules" : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <Zap className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>Automation Rules</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-200 rounded-lg ${
-                            location.pathname === createPageUrl("BRD")
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={createPageUrl("BRD")}
-                            title={sidebarCollapsed ? "BRD" : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <FileText className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>BRD</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          className={`transition-all duration-200 rounded-lg ${
-                            location.pathname === createPageUrl("EmailInbox")
-                              ? 'bg-[#1E3A5F] text-white border-l-[3px] border-[#2563EB]'
-                              : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border-l-[3px] border-transparent'
-                          } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
-                        >
-                          <Link
-                            to={createPageUrl("EmailInbox")}
-                            title={sidebarCollapsed ? "Email Inbox" : undefined}
-                            className={`flex items-center ${sidebarCollapsed ? "sidebar-icon-center gap-0 px-0 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                          >
-                            <Mail className="w-5 h-5" />
-                            <span className={`font-medium sidebar-label ${sidebarCollapsed ? "hidden" : "inline"}`}>Email Inbox</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              )}
-
-              <AccountsNav location={location} collapsed={sidebarCollapsed} />
-
-              {!skipQuickStats && (
-                <SidebarGroup className="mt-8">
-                  <SidebarGroupLabel className={`sidebar-group-label text-[10px] font-semibold text-[#475569] uppercase tracking-widest ${sidebarCollapsed ? "hidden" : "px-3 py-2"}`}>
-                    Quick Stats
-                  </SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <div className={`px-3 py-2 space-y-3 ${sidebarCollapsed ? "hidden" : ""}`}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[#94A3B8]">Active Jobs</span>
-                        <span className="font-semibold text-white">
-                          {qsLoading ? <span className="inline-block w-6 h-4 bg-slate-200 rounded animate-pulse" /> : quickStats.activeJobs}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">New Candidates</span>
-                        <span className="font-semibold text-blue-600">
-                          {qsLoading ? <span className="inline-block w-6 h-4 bg-slate-200 rounded animate-pulse" /> : quickStats.newCandidates}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[#94A3B8]">This Month</span>
-                        <span className="font-semibold text-[#16A34A]">
-                          {qsLoading ? <span className="inline-block w-16 h-4 bg-slate-200 rounded animate-pulse" /> : `${quickStats.thisMonthPlacements} Placed`}
-                        </span>
-                      </div>
-                    </div>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              )}
-            </SidebarContent>
-
-            <SidebarFooter className={`border-t border-[#1E293B] ${sidebarCollapsed ? "px-2 py-3" : "p-4"}`}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className={`w-full justify-start gap-3 p-3 h-auto ${sidebarCollapsed ? "justify-center" : ""}`}>
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback className="bg-[#1E293B] text-[#94A3B8] text-sm">
-                        {me?.full_name ? me.full_name.charAt(0).toUpperCase() : (me?.email ? me.email.charAt(0).toUpperCase() : 'U')}
-                      </AvatarFallback>
-                    </Avatar>
-                    {!sidebarCollapsed && (
-                      <div className="flex-1 text-left min-w-0">
-                        <p className="font-medium text-white text-sm truncate">{me?.full_name || me?.email || 'User Account'}</p>
-                        <p className="text-[11px] text-[#475569] truncate">{myRole?.name || 'User'}</p>
-                      </div>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem>
-                    <User className="w-4 h-4 mr-2" />
-                    Profile Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Company Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-red-600">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarFooter>
-          </Sidebar>
-
-          <main className="flex-1 flex flex-col min-w-0">
-            <header className="bg-white border-b border-[#E2E8F0] px-6 py-3 flex items-center gap-4">
-              <SidebarTrigger className="md:hidden hover:bg-slate-100 p-2 rounded-lg transition-colors duration-200" />
-
-              <div className="flex-1 max-w-md">
-                <div 
-                  className="relative cursor-pointer"
-                  onClick={() => setCommandPaletteOpen(true)}
-                >
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
-                  <div className="pl-10 pr-16 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-md text-[13px] text-[#94A3B8] hover:bg-white hover:border-[#CBD5E1] transition-colors">
-                    Search anything...
-                  </div>
-                  <kbd className="absolute right-3 top-1/2 transform -translate-y-1/2 px-1.5 py-0.5 text-[11px] bg-white border border-[#E2E8F0] rounded text-[#94A3B8]">
-                    ⌘K
-                  </kbd>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="relative text-[#64748B] hover:text-[#1E293B] hover:bg-[#F1F5F9]">
-                  <Bell className="w-4.5 h-4.5" />
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#DC2626] rounded-full"></span>
-                </Button>
-              </div>
-            </header>
-
-            <div className="flex-1 overflow-auto">
-              <div className="relative min-h-full">
-                <div className="absolute inset-0 pointer-events-none select-none z-0"></div>
-                <div className="relative z-10 px-4 md:px-6 lg:pr-6 lg:pl-0 pb-6">
-                  {isBlocked ? (
-                    <AccessBlocker user={me} />
-                  ) : (
-                    <>
-                      {children}
-                      {renderAssistant && currentPageName !== "AccessControl" && <Assistant currentPageName={currentPageName} />}
-                    </>
-                  )}
-                </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'3px 0' }}>
+                <span style={{ fontSize:12, color:'#86868B' }}>Placed (Month)</span>
+                <span style={{ fontSize:12, fontWeight:600, color:'#1D1D1F' }}>
+                  {qsLoading ? '—' : quickStats.thisMonthPlacements}
+                </span>
               </div>
             </div>
-          </main>
+          )}
 
-          <RightPreviewPanel
-            open={preview.open}
-            title={`${preview.entity || ""} Details`}
-            onClose={closePreview}
-          >
-            {!preview.open ? null : (
-              preview.entity === "Candidate" ? <CandidatePreviewLoader id={preview.id} /> :
-              preview.entity === "Job" ? <JobPreview id={preview.id} /> :
-              preview.entity === "Company" ? <CompanyPreview id={preview.id} /> :
-              preview.entity === "Application" ? <ApplicationPreview id={preview.id} /> :
-              preview.entity === "Task" ? <TaskPreview id={preview.id} /> :
-              preview.entity === "Playbook" ? <PlaybookPreview id={preview.id} /> :
-              <div className="text-sm text-slate-600">Unsupported preview.</div>
-            )}
-          </RightPreviewPanel>
+          {/* User */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div style={{ padding:'9px 12px', borderTop:'1px solid #E5E5EA', display:'flex', alignItems:'center', gap:9, cursor:'pointer' }}
+                className="hover:bg-black/[.03] transition-colors">
+                <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(145deg,#0071E3,#30A14E)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#fff', flexShrink:0 }}>
+                  {initials}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13.5, fontWeight:600, color:'#1D1D1F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{me?.full_name || me?.email || 'User'}</div>
+                  <div style={{ fontSize:11, color:'#86868B' }}>{myRole?.name || (me?.role === 'admin' ? 'Administrator' : 'User')}</div>
+                </div>
+                <MoreHorizontal style={{ width:14, height:14, color:'#AEAEB2', flexShrink:0 }} />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem><User className="w-4 h-4 mr-2" />Profile Settings</DropdownMenuItem>
+              <DropdownMenuItem><Settings className="w-4 h-4 mr-2" />Company Settings</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-600"><LogOut className="w-4 h-4 mr-2" />Sign Out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </aside>
+
+        {/* ── MAIN ── */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Topbar */}
+          <header className="rx-topbar">
+            <div style={{ fontSize:17, fontWeight:700, color:'#1D1D1F', letterSpacing:'-.022em', flexShrink:0 }}>
+              {navigationItems.find(n => location.pathname === n.url)?.title ||
+               (location.pathname.includes('Dashboard') ? 'Dashboard' :
+                location.pathname.includes('Candidates') ? 'Candidates' :
+                location.pathname.includes('Jobs') ? 'Jobs' :
+                location.pathname.includes('Companies') ? 'Connections' :
+                location.pathname.includes('Submissions') ? 'Applications' :
+                location.pathname.includes('Tasks') ? 'Tasks' :
+                location.pathname.includes('ResumeStudio') ? 'Resume Studio' :
+                location.pathname.includes('MyWork') ? 'My Work' :
+                location.pathname.includes('Playbooks') ? 'Playbooks' :
+                location.pathname.includes('Goals') ? 'Goals' :
+                location.pathname.includes('AIAgents') ? 'AI Agents' :
+                location.pathname.includes('AutomationRules') ? 'Automation' :
+                location.pathname.includes('EmailInbox') ? 'Email Inbox' :
+                location.pathname.includes('AccessControl') ? 'Access Control' :
+                location.pathname.includes('Approvals') ? 'Approvals' :
+                location.pathname.includes('JobStack') ? 'Job Stack' :
+                location.pathname.includes('EmailBlast') ? 'Email Blast' :
+                location.pathname.includes('BRD') ? 'BRD' :
+                location.pathname.includes('Invoices') ? 'Invoices' :
+                location.pathname.includes('Expenses') ? 'Expenses' :
+                location.pathname.includes('DuplicateManager') ? 'Duplicate Manager' :
+                'Recruiter X')}
+            </div>
+
+            <div
+              onClick={() => setCommandPaletteOpen(true)}
+              style={{ flex:1, maxWidth:340, display:'flex', alignItems:'center', gap:7, background:'rgba(0,0,0,.06)', borderRadius:10, padding:'6px 11px', cursor:'text' }}
+              className="hover:bg-black/[.09] transition-colors"
+            >
+              <Search style={{ width:13, height:13, color:'#86868B', flexShrink:0 }} />
+              <span style={{ flex:1, fontSize:13, color:'#86868B' }}>Search candidates, jobs, companies…</span>
+              <kbd style={{ fontFamily:"'SF Mono','Menlo',monospace", fontSize:10, color:'#AEAEB2', background:'#fff', border:'1px solid rgba(0,0,0,.08)', borderRadius:5, padding:'1px 5px' }}>⌘K</kbd>
+            </div>
+
+            <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
+              <button
+                onClick={() => setAiQuickActionsOpen(true)}
+                style={{ display:'flex', alignItems:'center', gap:5, background:'#0071E3', color:'#fff', border:'none', borderRadius:20, padding:'6px 16px', fontSize:13, fontWeight:600, cursor:'pointer', letterSpacing:'-.01em' }}
+                className="hover:bg-[#0077ED] transition-colors"
+              >
+                <Zap style={{ width:12, height:12 }} />
+                AI Actions
+              </button>
+              <button
+                onClick={() => {}}
+                style={{ width:32, height:32, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'none', background:'none', cursor:'pointer', position:'relative', color:'#6E6E73' }}
+                className="hover:bg-black/[.07] transition-colors"
+              >
+                <Bell style={{ width:16, height:16 }} />
+                <div style={{ position:'absolute', top:7, right:6, width:7, height:7, background:'#FF3B30', borderRadius:'50%', border:'1.5px solid #fff' }} />
+              </button>
+              <div style={{ width:1, height:18, background:'#E5E5EA' }} />
+              <div style={{ width:28, height:28, borderRadius:'50%', background:'linear-gradient(145deg,#0071E3,#30A14E)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#fff', cursor:'pointer', flexShrink:0 }}>
+                {initials}
+              </div>
+            </div>
+          </header>
+
+          {/* Page content */}
+          <div className="flex-1 overflow-auto" style={{ background:'#F5F5F7' }}>
+            <div className="rx-page-in">
+              {isBlocked ? (
+                <AccessBlocker user={me} />
+              ) : (
+                <>
+                  {children}
+                  {renderAssistant && currentPageName !== "AccessControl" && <Assistant currentPageName={currentPageName} />}
+                </>
+              )}
+            </div>
+          </div>
         </div>
-        
-        <CommandPalette 
-          open={commandPaletteOpen} 
-          onClose={() => setCommandPaletteOpen(false)} 
-        />
-        <QuickActions onAction={handleQuickAction} />
-        <AIQuickActions 
-          open={aiQuickActionsOpen} 
-          onClose={() => setAiQuickActionsOpen(false)} 
-        />
-        <KeyboardShortcuts 
-          open={shortcutsOpen} 
-          onClose={() => setShortcutsOpen(false)} 
-        />
-        <NotificationToast />
-      </SidebarProvider>
+
+        <RightPreviewPanel open={preview.open} title={`${preview.entity || ""} Details`} onClose={closePreview}>
+          {!preview.open ? null : (
+            preview.entity === "Candidate" ? <CandidatePreviewLoader id={preview.id} /> :
+            preview.entity === "Job" ? <JobPreview id={preview.id} /> :
+            preview.entity === "Company" ? <CompanyPreview id={preview.id} /> :
+            preview.entity === "Application" ? <ApplicationPreview id={preview.id} /> :
+            preview.entity === "Task" ? <TaskPreview id={preview.id} /> :
+            preview.entity === "Playbook" ? <PlaybookPreview id={preview.id} /> :
+            <div className="text-sm text-slate-600">Unsupported preview.</div>
+          )}
+        </RightPreviewPanel>
+      </div>
+
+      <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      <QuickActions onAction={handleQuickAction} />
+      <AIQuickActions open={aiQuickActionsOpen} onClose={() => setAiQuickActionsOpen(false)} />
+      <KeyboardShortcuts open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <NotificationToast />
     </PermissionsProvider>
   );
 }
