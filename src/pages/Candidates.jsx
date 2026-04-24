@@ -297,7 +297,7 @@ export default function Candidates() {
   // Reset to page 1 when filters or sort change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedViewId, sortBy, sortOrder, filteredCandidates.length]);
+  }, [searchTerm, selectedViewId, sortBy, sortOrder, stageFilter, filteredCandidates.length]);
 
 
   const handleAddCandidate = async (candidateData) => {
