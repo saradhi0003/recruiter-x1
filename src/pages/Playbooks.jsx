@@ -122,128 +122,202 @@ export default function PlaybooksPage() {
   return (
     <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background: "#F5F5F7", minHeight: "100vh" }}>
       <div style={{ padding: "20px 24px", background: "#fff", borderBottom: "1px solid #E5E5EA" }}>
-      <Breadcrumbs items={[{ label: "Playbooks" }]} />
+        <Breadcrumbs items={[{ label: "Playbooks" }]} />
 
-      <PageHeader
-        title="Knowledge Base & Playbooks"
-        subtitle="Document and share best practices, processes, and workflows"
-        right={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowSearch(!showSearch)}
-              className="gap-2"
-            >
-              <Search className="w-4 h-4" />
-              Smart Search
-            </Button>
-            <Button
-              onClick={() => {
-                setEditingPlaybook(null);
-                setShowForm(true);
-              }}
-              className="gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Playbook
-            </Button>
-          </div>
-        }
-      />
-
-      {/* Smart Search */}
-      {showSearch && (
-        <PlaybookSmartSearch />
-      )}
-
-      {/* Filters and Sort */}
-      <div style={{ padding: "20px 24px", background: "#fff", borderRadius: "12px", marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,.05)" }}>
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-500" />
-            <span className="text-sm font-medium text-slate-700">Filter:</span>
-            {categories.map((cat) => (
-              <Button
-                key={cat.value}
-                variant={filterCategory === cat.value ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterCategory(cat.value)}
-                className="text-xs"
+        <PageHeader
+          title="Knowledge Base & Playbooks"
+          subtitle="Document and share best practices, processes, and workflows"
+          right={
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 20,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  border: "1px solid #E5E5EA",
+                  background: "#fff",
+                  color: "#6E6E73",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all 100ms"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#F5F5F7"; e.currentTarget.style.color = "#1D1D1F"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#6E6E73"; }}
               >
-                {cat.label}
-              </Button>
-            ))}
-          </div>
+                <Search style={{ width: 14, height: 14 }} />
+                Smart Search
+              </button>
+              <button
+                onClick={() => {
+                  setEditingPlaybook(null);
+                  setShowForm(true);
+                }}
+                style={{
+                  padding: "7px 18px",
+                  borderRadius: 20,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  border: "none",
+                  background: "#0071E3",
+                  color: "#fff",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  boxShadow: "0 2px 8px rgba(0,113,227,.3)",
+                  transition: "all 100ms"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#0077ED"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "#0071E3"; }}
+              >
+                <Plus style={{ width: 14, height: 14 }} />
+                New Playbook
+              </button>
+            </div>
+          }
+        />
 
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-sm text-slate-600">Sort by:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="text-sm border border-slate-200 rounded px-2 py-1"
-            >
-              <option value="recent">Most Recent</option>
-              <option value="popular">Most Popular</option>
-              <option value="rating">Highest Rated</option>
-            </select>
+        {/* Smart Search */}
+        {showSearch && (
+          <PlaybookSmartSearch />
+        )}
+
+        {/* Filters and Sort */}
+        <div style={{ padding: "14px 18px", background: "#fff", borderRadius: 16, marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,.06),0 0 0 .5px rgba(0,0,0,.05)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Filter style={{ width: 14, height: 14, color: "#86868B" }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#86868B", textTransform: "uppercase", letterSpacing: ".01em" }}>Filter:</span>
+              {categories.map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => setFilterCategory(cat.value)}
+                  style={{
+                    padding: "5px 14px",
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: filterCategory === cat.value ? 600 : 500,
+                    border: "none",
+                    background: filterCategory === cat.value ? "#1D1D1F" : "#fff",
+                    color: filterCategory === cat.value ? "#fff" : "#6E6E73",
+                    cursor: "pointer",
+                    boxShadow: filterCategory === cat.value ? "none" : "0 1px 4px rgba(0,0,0,.08),0 0 0 .5px rgba(0,0,0,.06)",
+                    transition: "all 100ms"
+                  }}
+                  onMouseEnter={(e) => { if (filterCategory !== cat.value) { e.currentTarget.style.background = "#F5F5F7"; e.currentTarget.style.color = "#1D1D1F"; } }}
+                  onMouseLeave={(e) => { if (filterCategory !== cat.value) { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#6E6E73"; } }}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#86868B", textTransform: "uppercase", letterSpacing: ".01em" }}>Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{
+                  fontSize: 13,
+                  border: "1px solid #E5E5EA",
+                  borderRadius: 8,
+                  padding: "5px 10px",
+                  background: "#fff",
+                  color: "#1D1D1F",
+                  cursor: "pointer",
+                  fontWeight: 500
+                }}
+              >
+                <option value="recent">Most Recent</option>
+                <option value="popular">Most Popular</option>
+                <option value="rating">Highest Rated</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Playbooks Grid */}
       <div style={{ padding: "0 24px" }}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedPlaybooks.map((playbook) => (
-          <Card key={playbook.id} className="hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between mb-2">
-                <Badge className={`${getCategoryColor(playbook.category)} capitalize`}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+          {sortedPlaybooks.map((playbook) => (
+            <div
+              key={playbook.id}
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                border: "1px solid #E5E5EA",
+                padding: "18px 20px",
+                boxShadow: "0 1px 4px rgba(0,0,0,.06),0 0 0 .5px rgba(0,0,0,.05)",
+                transition: "box-shadow 120ms, border 120ms",
+                cursor: "pointer"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 6px 18px rgba(0,0,0,.10),0 0 0 .5px rgba(0,0,0,.05)";
+                e.currentTarget.style.borderColor = "#BFDBFE";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,.06),0 0 0 .5px rgba(0,0,0,.05)";
+                e.currentTarget.style.borderColor = "#E5E5EA";
+              }}
+            >
+              {/* Header with category and rating */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: "rgba(0,113,227,.10)", color: "#0071E3", textTransform: "uppercase", letterSpacing: ".01em" }}>
                   {playbook.category.replace(/_/g, " ")}
-                </Badge>
+                </span>
                 {playbook.effectiveness_rating && (
-                  <div className="flex items-center gap-1 text-xs text-yellow-600">
-                    <Star className="w-3 h-3 fill-yellow-400" />
-                    <span>{playbook.effectiveness_rating.toFixed(1)}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "#F59E0B" }}>
+                    <Star style={{ width: 14, height: 14, fill: "#F59E0B" }} />
+                    {playbook.effectiveness_rating.toFixed(1)}
                   </div>
                 )}
               </div>
+
+              {/* Title */}
               <Link
                 to={createPageUrl(`PlaybookDetails?id=${playbook.id}`)}
-                className="text-lg font-semibold text-blue-600 hover:underline"
+                style={{ textDecoration: "none" }}
               >
-                {playbook.title}
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1D1D1F", marginBottom: 8, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {playbook.title}
+                </h3>
               </Link>
-            </CardHeader>
 
-            <CardContent className="space-y-3">
+              {/* Description */}
               {playbook.description && (
-                <p className="text-sm text-slate-700 line-clamp-3">
+                <p style={{ fontSize: 13, color: "#6E6E73", marginBottom: 10, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4 }}>
                   {playbook.description}
                 </p>
               )}
 
+              {/* Tags */}
               {playbook.tags && playbook.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {playbook.tags.slice(0, 4).map((tag, i) => (
-                    <Badge key={i} variant="outline" className="text-xs">
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                  {playbook.tags.slice(0, 3).map((tag, i) => (
+                    <span key={i} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: "#F5F5F7", color: "#86868B", border: "1px solid #E5E5EA" }}>
                       {tag}
-                    </Badge>
+                    </span>
                   ))}
-                  {playbook.tags.length > 4 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{playbook.tags.length - 4} more
-                    </Badge>
+                  {playbook.tags.length > 3 && (
+                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: "#F5F5F7", color: "#86868B", border: "1px solid #E5E5EA" }}>
+                      +{playbook.tags.length - 3}
+                    </span>
                   )}
                 </div>
               )}
 
-              <div className="flex items-center gap-4 text-xs text-slate-500 pt-3 border-t">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
+              {/* Meta info */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: "#AEAEB2", paddingTop: 10, borderTop: "1px solid #F2F2F7" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <Eye style={{ width: 13, height: 13 }} />
                   {playbook.usage_count || 0}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <Clock style={{ width: 13, height: 13 }} />
                   v{playbook.version || "1.0"}
                 </span>
                 {playbook.steps && (
@@ -251,52 +325,73 @@ export default function PlaybooksPage() {
                 )}
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <Link to={createPageUrl(`PlaybookDetails?id=${playbook.id}`)} className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full gap-2">
-                    <BookOpen className="w-4 h-4" />
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <Link to={createPageUrl(`PlaybookDetails?id=${playbook.id}`)} style={{ flex: 1, textDecoration: "none" }}>
+                  <button style={{ width: "100%", padding: "6px 12px", borderRadius: 12, border: "1px solid #E5E5EA", background: "#fff", color: "#6E6E73", cursor: "pointer", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 100ms" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#F5F5F7"; e.currentTarget.style.color = "#1D1D1F"; }}>
+                    <BookOpen style={{ width: 13, height: 13 }} />
                     View
-                  </Button>
+                  </button>
                 </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
                   onClick={() => {
                     setEditingPlaybook(playbook);
                     setShowForm(true);
                   }}
+                  style={{ flex: 1, padding: "6px 12px", borderRadius: 12, border: "1px solid #E5E5EA", background: "#fff", color: "#6E6E73", cursor: "pointer", fontSize: 13, fontWeight: 500, transition: "all 100ms" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#F5F5F7"; e.currentTarget.style.color = "#1D1D1F"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#6E6E73"; }}
                 >
                   Edit
-                </Button>
+                </button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {sortedPlaybooks.length === 0 && (
-        <div style={{ background: "#fff", borderRadius: "12px", padding: "48px 24px", textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,.05)" }}>
-          <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">
-            {filterCategory === "all" 
-              ? "No playbooks yet" 
-              : `No playbooks in ${filterCategory.replace(/_/g, " ")}`}
-          </h3>
-          <p className="text-slate-600 mb-6">
-            Create your first playbook to document your recruitment processes
-          </p>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Create Playbook
-          </Button>
+            </div>
+          ))}
         </div>
-      )}
+
+        {/* Empty State */}
+        {sortedPlaybooks.length === 0 && (
+          <div style={{ background: "#fff", borderRadius: 16, padding: "48px 24px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,.06),0 0 0 .5px rgba(0,0,0,.05)" }}>
+            <BookOpen style={{ width: 48, height: 48, color: "#AEAEB2", margin: "0 auto 16px" }} />
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1D1D1F", marginBottom: 6 }}>
+              {filterCategory === "all" 
+                ? "No playbooks yet" 
+                : `No playbooks in ${filterCategory.replace(/_/g, " ")}`}
+            </h3>
+            <p style={{ fontSize: 13, color: "#86868B", marginBottom: 20 }}>
+              Create your first playbook to document your recruitment processes
+            </p>
+            <button
+              onClick={() => setShowForm(true)}
+              style={{
+                padding: "8px 20px",
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: 600,
+                border: "none",
+                background: "#0071E3",
+                color: "#fff",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                boxShadow: "0 2px 8px rgba(0,113,227,.3)"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#0077ED"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "#0071E3"; }}
+            >
+              <Plus style={{ width: 14, height: 14 }} />
+              Create Playbook
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Playbook Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-auto">
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ width: "100%", maxWidth: 800, maxHeight: "90vh", overflow: "auto", borderRadius: 20, background: "#fff" }}>
             <PlaybookForm
               playbook={editingPlaybook}
               onSave={handleSave}
