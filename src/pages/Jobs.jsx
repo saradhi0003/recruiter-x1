@@ -103,6 +103,7 @@ export default function JobsPage() {
 
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const defaultVisibleColumns = [
     { key: "title", label: "Job Title", default: true },
@@ -535,560 +536,197 @@ export default function JobsPage() {
     setCurrentPage(1);
   };
 
+  // ── Derived metrics ──
+  const openJobs = jobs.filter(j => j.status === "open").length;
+  const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const newThisWeek = jobs.filter(j => new Date(j.created_date) >= sevenDaysAgo).length;
+  const urgentJobs = jobs.filter(j => j.priority === "urgent" || j.priority === "high").length;
+  const filledJobs = jobs.filter(j => j.status === "filled").length;
+
+  const allStatusFiltered = statusFilter === "all" ? visibleJobs : statusFilter === "urgent" ? visibleJobs.filter(j => j.priority === "urgent" || j.priority === "high") : visibleJobs.filter(j => j.status === statusFilter);
+  const totalStatusPages = Math.ceil(allStatusFiltered.length / rowsPerPage);
+  const paginatedStatusJobs = allStatusFiltered.slice(startIndex, startIndex + rowsPerPage);
+
+  // ── Helpers ──
+  const getInitials = (name) => name ? name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() : "?";
+  const avatarPalette = ["#3B82F6,#6366F1","#F59E0B,#EA580C","#8B5CF6,#7C3AED","#10B981,#059669","#EF4444,#DC2626","#0EA5E9,#0284C7"];
+  const avatarGrad = (name) => { const p = avatarPalette[(name?.charCodeAt(0)||0) % avatarPalette.length].split(","); return `linear-gradient(135deg,${p[0]},${p[1]})`; };
+  const statusBadge = (s) => ({ open:{bg:"rgba(48,161,78,.12)",c:"#16A34A"}, draft:{bg:"rgba(0,0,0,.06)",c:"#86868B"}, on_hold:{bg:"rgba(244,130,15,.12)",c:"#D97706"}, filled:{bg:"rgba(0,113,227,.10)",c:"#0071E3"}, cancelled:{bg:"rgba(255,59,48,.10)",c:"#DC2626"} }[s] || {bg:"rgba(0,0,0,.06)",c:"#86868B"});
+  const priorityBadge = (p) => ({ urgent:{bg:"rgba(255,59,48,.10)",c:"#DC2626"}, high:{bg:"rgba(244,130,15,.12)",c:"#D97706"}, medium:{bg:"rgba(0,113,227,.10)",c:"#0071E3"}, low:{bg:"rgba(0,0,0,.06)",c:"#86868B"} }[p] || {bg:"rgba(0,0,0,.06)",c:"#86868B"});
+  const timeAgo = (d) => { const days = Math.floor((Date.now()-new Date(d))/86400000); return days===0?"Today":days===1?"1d ago":days<7?`${days}d ago`:`${Math.floor(days/7)}w ago`; };
+
   return (
-    <div className="p-6 lg:p-8 space-y-6 relative">
-      <PageHeader
-        title="Jobs"
-        subtitle="Manage open positions and job postings"
-        right={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2 whitespace-nowrap" onClick={() => setShowEmailBlast(true)}>
-              <MailPlus className="w-4 h-4" />
-              Email Blast
-            </Button>
-            <Button variant="outline" className="gap-2 whitespace-nowrap" onClick={() => setShowImport(true)}>
-              <Upload className="w-4 h-4" />
-              Import CSV
-            </Button>
-            <Button variant="outline" className="gap-2 whitespace-nowrap" onClick={() => setShowBulkPaste(true)}>
-              <FileText className="w-4 h-4" />
-              Paste Requirement
-            </Button>
-            <PermissionGate entity="Job" action="create">
-              <Button variant="outline" className="gap-2 bg-white text-blue-700 hover:bg-slate-50" onClick={() => loadData(true)}>
-                <RefreshCcw className="w-4 h-4" />
-                Refresh
-              </Button>
-              <Button onClick={() => { setEditingJob(null); setShowJobForm(true); setSelectedJob(null); setHighlightedJob(null); }} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                <Plus className="w-4 h-4" />
-                Add Job
-              </Button>
-            </PermissionGate>
+    <div style={{ fontFamily:"-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background:"#F5F5F7", minHeight:"100vh" }}>
+
+      {/* ── Metrics bar ── */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", background:"#fff", borderBottom:"1px solid #E5E5EA" }}>
+        {[
+          { label:"Open Roles", value:loading?"—":openJobs, sub:"actively hiring" },
+          { label:"New This Week", value:loading?"—":newThisWeek, sub:`+${newThisWeek} posted`, subColor:"#30A14E" },
+          { label:"High Priority", value:loading?"—":urgentJobs, sub:"urgent + high", valColor:"#D97706" },
+          { label:"Filled", value:loading?"—":filledJobs, sub:"this pipeline" },
+        ].map((m,i) => (
+          <div key={i} style={{ padding:"22px 28px", borderRight:i<3?"1px solid #E5E5EA":"none" }}>
+            <div style={{ fontSize:11.5, fontWeight:500, color:"#86868B", marginBottom:5 }}>{m.label}</div>
+            <div style={{ fontSize:42, fontWeight:700, letterSpacing:"-.04em", lineHeight:1, color:m.valColor||"#1D1D1F" }}>{m.value}</div>
+            <div style={{ fontSize:11.5, color:m.subColor||"#86868B", marginTop:6 }}>{m.sub}</div>
           </div>
-        }
-      />
+        ))}
+      </div>
 
-      {highlightedJob && (
-        <Card className="border-2 border-blue-500 shadow-lg sticky top-0 z-10 bg-white">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center text-lg font-semibold">
-                  <Briefcase className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">
-                    {highlightedJob.title}
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    {highlightedJob.location && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {highlightedJob.location}
-                      </div>
-                    )}
-                    {highlightedJob.employment_type && (
-                      <span>• {highlightedJob.employment_type.replace("_", " ")}</span>
-                    )}
-                  </div>
-                </div>
+      {/* ── Filter bar ── */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"12px 24px", background:"#fff", borderBottom:"1px solid #E5E5EA", flexWrap:"wrap" }}>
+        <span style={{ fontSize:12, fontWeight:600, color:"#86868B", marginRight:4 }}>Status</span>
+        {[{k:"all",l:"All"},{k:"open",l:"Open"},{k:"draft",l:"Draft"},{k:"on_hold",l:"On Hold"},{k:"filled",l:"Filled"}].map(s => (
+          <button key={s.k} onClick={() => { setStatusFilter(s.k); setCurrentPage(1); }}
+            style={{ padding:"5px 13px", borderRadius:20, fontSize:13, fontWeight:statusFilter===s.k?600:500, border:"none", cursor:"pointer", background:statusFilter===s.k?"#1D1D1F":"#fff", color:statusFilter===s.k?"#fff":"#6E6E73", boxShadow:statusFilter===s.k?"none":"0 1px 4px rgba(0,0,0,.08),0 0 0 .5px rgba(0,0,0,.06)", transition:"all 120ms" }}>
+            {s.l}
+          </button>
+        ))}
+        <button onClick={() => { setStatusFilter("urgent"); setCurrentPage(1); }}
+          style={{ padding:"5px 13px", borderRadius:20, fontSize:13, fontWeight:600, border:"none", cursor:"pointer", background:statusFilter==="urgent"?"#D97706":"rgba(244,130,15,.10)", color:statusFilter==="urgent"?"#fff":"#D97706" }}>
+          🔥 Urgent
+        </button>
+
+        {/* Search */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(0,0,0,.06)", borderRadius:10, padding:"5px 10px", marginLeft:8 }}>
+          <Search style={{ width:13, height:13, color:"#86868B" }} />
+          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search jobs…"
+            style={{ border:"none", background:"transparent", outline:"none", fontSize:13, color:"#1D1D1F", width:160 }} />
+        </div>
+
+        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button style={{ padding:"6px 14px", borderRadius:20, fontSize:13, fontWeight:500, border:"1px solid #E5E5EA", background:"#fff", color:"#6E6E73", cursor:"pointer" }}>More ▾</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => loadData(true)}><RefreshCcw className="w-4 h-4 mr-2" />Refresh</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowEmailBlast(true)}><MailPlus className="w-4 h-4 mr-2" />Email Blast</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowImport(true)}><Upload className="w-4 h-4 mr-2" />Import CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowBulkPaste(true)}><FileText className="w-4 h-4 mr-2" />Paste Requirement</DropdownMenuItem>
+              {selectedIds.size > 0 && <DropdownMenuItem onClick={() => setShowBulkUpdate(true)}>Mass Update ({selectedIds.size})</DropdownMenuItem>}
+              {selectedIds.size > 0 && <DropdownMenuItem onClick={() => setShowBulkDelete(true)} className="text-red-600">Delete Selected ({selectedIds.size})</DropdownMenuItem>}
+              <DropdownMenuItem onClick={() => { setSelectedViewId(null); setShowViewSettings(true); }}>+ New View</DropdownMenuItem>
+              {selectedViewId && <DropdownMenuItem onClick={() => setShowViewSettings(true)}>Edit View</DropdownMenuItem>}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <PermissionGate entity="Job" action="create">
+            <button onClick={() => { setEditingJob(null); setShowJobForm(true); setSelectedJob(null); setHighlightedJob(null); }}
+              style={{ padding:"7px 16px", borderRadius:20, fontSize:13, fontWeight:600, border:"none", background:"#0071E3", color:"#fff", cursor:"pointer", boxShadow:"0 2px 8px rgba(0,113,227,.3)" }}>
+              + Add Job
+            </button>
+          </PermissionGate>
+        </div>
+      </div>
+
+      {/* ── Table ── */}
+      <div style={{ padding:"20px 24px 40px" }}>
+        <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 2px 12px rgba(0,0,0,.07),0 0 0 .5px rgba(0,0,0,.05)", overflow:"hidden" }}>
+          {/* Header */}
+          <div style={{ display:"grid", gridTemplateColumns:"1.6fr 140px 100px 110px 100px 80px 80px 36px", gap:0, padding:"9px 20px", borderBottom:"1px solid #E5E5EA", background:"#FAFAFA" }}>
+            {["JOB","COMPANY","TYPE","PRIORITY","STATUS","RATE","ADDED",""].map((h,i) => (
+              <div key={i} style={{ fontSize:11, fontWeight:600, letterSpacing:".04em", color:"#86868B", display:"flex", alignItems:"center", gap:i===0?8:0 }}>
+                {i===0 && <Checkbox checked={allVisibleSelected} onCheckedChange={c=>toggleSelectAllVisible(!!c)} />}
+                {h}
               </div>
-              <Button variant="ghost" size="icon" onClick={closeHighlightPanel}>
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <div className="mb-4">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                Quick Status Update
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {statusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updateHighlightedField("status", option.value)}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all font-medium text-sm ${
-                      currentStatus === option.value
-                        ? option.color + " shadow-sm"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                Quick Priority Update
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {priorityOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updateHighlightedField("priority", option.value)}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all font-medium text-sm ${
-                      currentPriority === option.value
-                        ? option.color + " shadow-sm"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 pt-4 border-t">
-              <Button
-                onClick={saveHighlightedChanges}
-                disabled={savingHighlighted || Object.keys(highlightedChanges).length === 0}
-                className="gap-2"
-              >
-                {savingHighlighted ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Save Changes
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowJobForm(true);
-                  setEditingJob(highlightedJob);
-                  closeHighlightPanel();
-                }}
-                className="gap-2"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Full Job
-              </Button>
-              {Object.keys(highlightedChanges).length > 0 && (
-                <Badge className="ml-auto bg-orange-100 text-orange-800">
-                  {Object.keys(highlightedChanges).length} unsaved change{Object.keys(highlightedChanges).length > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Search jobs by title, location, company or skills..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline" className="gap-2 whitespace-nowrap" onClick={() => setShowViewSettings(true)}>
-              <Filter className="w-4 h-4" />
-              Filters & Display
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <select
-            className="border rounded px-3 py-2 text-sm bg-white text-slate-700"
-            value={selectedViewId || ""}
-            onChange={(e) => {
-              const newViewId = e.target.value || null;
-              setSelectedViewId(newViewId);
-              const view = views.find(v => v.id === newViewId);
-              if (view) {
-                if (view.sort) {
-                  const order = view.sort.startsWith('-') ? 'desc' : 'asc';
-                  const by = view.sort.replace(/^-/, '');
-                  setSortBy(by);
-                  setSortOrder(order);
-                } else {
-                  setSortBy("created_date");
-                  setSortOrder("desc");
-                }
-                if (view.columns && view.columns.length > 0) {
-                  setVisibleColumns(view.columns.map(colKey => defaultVisibleColumns.find(col => col.key === colKey) || { key: colKey, label: colKey.replace(/_/g, ' '), default: false }));
-                } else {
-                  setVisibleColumns(defaultVisibleColumns);
-                }
-                if (view.type) {
-                  setViewType(view.type);
-                } else {
-                  setViewType("list");
-                }
-              } else {
-                setSortBy("created_date");
-                setSortOrder("desc");
-                setVisibleColumns(defaultVisibleColumns);
-                setViewType("list");
-              }
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">All Jobs (Default)</option>
-            {views.map(v => (
-              <option key={v.id} value={v.id}>{v.name}</option>
             ))}
-          </select>
-          <Button variant="outline" className="gap-2" onClick={() => setShowViewSettings(true)} disabled={!selectedViewId}>
-            Edit View
-          </Button>
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { setSelectedViewId(null); setShowViewSettings(true); }}>
-            New View
-          </Button>
-        </div>
-        <div className="text-sm text-slate-600">
-          {currentView ? `Filters: ${viewStatuses.length ? viewStatuses.map(s => s.replace(/_/g, ' ')).join(", ") : "None"}` : "Default filters"}
-        </div>
-      </div>
+          </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-600">
-          Showing {paginatedJobs.length === 0 ? 0 : startIndex + 1}-{startIndex + paginatedJobs.length} of {visibleJobs.length} jobs
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-600">Rows per page:</span>
-          <select
-            value={rowsPerPage}
-            onChange={(e) => handleRowsPerPageChange(e.target.value)}
-            className="border border-slate-200 rounded px-3 py-1.5 text-sm bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="500">500</option>
-          </select>
-        </div>
-      </div>
+          {loading ? (
+            <div style={{ padding:"48px", textAlign:"center", color:"#86868B" }}>
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" style={{ color:"#0071E3" }} />
+              <div style={{ fontSize:13 }}>Loading jobs…</div>
+            </div>
+          ) : paginatedStatusJobs.length === 0 ? (
+            <div style={{ padding:"60px", textAlign:"center" }}>
+              <Briefcase style={{ width:36, height:36, color:"#AEAEB2", margin:"0 auto 12px" }} />
+              <div style={{ fontSize:15, fontWeight:600, color:"#1D1D1F", marginBottom:6 }}>No jobs found</div>
+              <div style={{ fontSize:13, color:"#86868B" }}>{searchTerm ? "Try adjusting your search" : "Add your first job to get started"}</div>
+            </div>
+          ) : paginatedStatusJobs.map((job, idx) => {
+            const isSelected = selectedJob?.id === job.id;
+            const sb = statusBadge(job.status);
+            const pb = priorityBadge(job.priority);
+            const compName = getCompanyName(job.company_id);
 
-      {viewType === "list" ? (
-        <Card>
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                <p className="mt-2 text-slate-600">Loading jobs...</p>
-              </div>
-            ) : paginatedJobs.length === 0 ? (
-              <div className="p-12 text-center">
-                <Briefcase className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="font-semibold text-slate-900 mb-2">No jobs found</h3>
-                <p className="text-slate-600 mb-4">
-                  {searchTerm ? "Try adjusting your search criteria" : "Get started by adding your first job"}
-                </p>
-                <PermissionGate entity="Job" action="create">
-                  <Button onClick={() => { setEditingJob(null); setShowJobForm(true); }} className="gap-2">
-                    <Plus className="w-4 h-4" />
-                    Add First Job
-                  </Button>
-                </PermissionGate>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
-                  <div className="text-sm text-slate-700">
-                    {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select rows for bulk actions"}
+            return (
+              <div key={job.id} onClick={() => setSelectedJob(job)}
+                style={{ display:"grid", gridTemplateColumns:"1.6fr 140px 100px 110px 100px 80px 80px 36px", gap:0, padding:"10px 20px", borderBottom:idx<paginatedStatusJobs.length-1?"1px solid #F2F2F7":"none", alignItems:"center", cursor:"pointer", background:isSelected?"rgba(0,113,227,.05)":"transparent", transition:"background 100ms" }}
+                onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background="#F9F9FB"; }}
+                onMouseLeave={e => { e.currentTarget.style.background=isSelected?"rgba(0,113,227,.05)":"transparent"; }}>
+
+                {/* Job */}
+                <div style={{ display:"flex", alignItems:"center", gap:10, minWidth:0 }}>
+                  <Checkbox checked={selectedIds.has(job.id)} onCheckedChange={() => toggleSelect(job.id)} onClick={e=>e.stopPropagation()} />
+                  <div style={{ width:32, height:32, borderRadius:8, background:avatarGrad(compName), color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, flexShrink:0 }}>
+                    {getInitials(compName)}
                   </div>
-                  <div className="flex gap-2">
-                    <PermissionGate entity="Job" action="update">
-                      <Button
-                        variant="outline"
-                        className="gap-2"
-                        disabled={selectedIds.size === 0}
-                        onClick={() => setShowBulkUpdate(true)}
-                      >
-                        <Edit className="w-4 h-4" />
-                        Update Selected
-                      </Button>
-                    </PermissionGate>
-                    <PermissionGate entity="Job" action="delete">
-                      <Button
-                        variant="destructive"
-                        className="gap-2"
-                        disabled={selectedIds.size === 0}
-                        onClick={() => setShowBulkDelete(true)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete Selected
-                      </Button>
-                    </PermissionGate>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">
-                          <Checkbox
-                            checked={allVisibleSelected}
-                            className={someVisibleSelected ? "data-[state=checked]:bg-primary" : ""}
-                            onCheckedChange={(checked) => toggleSelectAllVisible(!!checked)}
-                          />
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
-                          Quick Edit
-                        </TableHead>
-                        {visibleColumns.map(col => (
-                          <TableHead
-                            key={col.key}
-                            className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-slate-100"
-                            onClick={() => handleSort(col.key)}
-                          >
-                            <div className="flex items-center gap-1">
-                              {col.label}
-                              {sortBy === col.key && (
-                                sortOrder === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                              )}
-                            </div>
-                          </TableHead>
-                        ))}
-                        <TableHead className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
-                          AI Matches
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedJobs.map((job) => (
-                        <TableRow
-                          key={job.id}
-                          className={`hover:bg-slate-50 ${highlightedJob?.id === job.id ? "bg-blue-50" : ""}`}
-                          onClick={() => setSelectedJob(job)}
-                        >
-                          <TableCell className="w-10">
-                            <Checkbox
-                              checked={selectedIds.has(job.id)}
-                              onCheckedChange={() => toggleSelect(job.id)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </TableCell>
-                          <TableCell className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleHighlightJob(job)}
-                              className="h-8 text-xs"
-                            >
-                              <Zap className="w-3 h-3 mr-1" />
-                              Quick Edit
-                            </Button>
-                          </TableCell>
-                          {visibleColumns.map(col => (
-                            <TableCell key={col.key}>
-                              {col.key === "title" && (
-                                <div>
-                                  <Link
-                                    to={createPageUrl(`JobDetails?id=${job.id}`)}
-                                    className="font-medium text-blue-600 hover:underline"
-                                    title="Open job"
-                                  >
-                                    {job.title}
-                                  </Link>
-                                  <p className="text-sm text-slate-500">
-                                    Posted {new Date(job.created_date).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              )}
-                              {col.key === "company_id" && (
-                                <div className="flex items-center gap-1">
-                                  <Building2 className="w-3 h-3 text-slate-400" />
-                                  {getCompanyName(job.company_id)}
-                                </div>
-                              )}
-                              {col.key === "location" && (
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="w-3 h-3 text-slate-400" />
-                                  {job.location || "Not specified"}
-                                </div>
-                              )}
-                              {col.key === "employment_type" && (
-                                <Badge variant="outline">
-                                  {job.employment_type?.replace('_', ' ')}
-                                </Badge>
-                              )}
-                              {col.key === "salary_range" && (
-                                job.salary_min && job.salary_max ? (
-                                  <div className="flex items-center gap-1">
-                                    <DollarSign className="w-3 h-3 text-slate-400" />
-                                    ${job.salary_min.toLocaleString()}-${job.salary_max.toLocaleString()}
-                                  </div>
-                                ) : (
-                                  "Not specified"
-                                )
-                              )}
-                              {col.key === "priority" && (
-                                <Badge className={getPriorityColor(job.priority)}>
-                                  {job.priority}
-                                </Badge>
-                              )}
-                              {col.key === "status" && (
-                                <Badge className={getStatusColor(job.status)}>
-                                  {job.status?.replace('_', ' ')}
-                                </Badge>
-                              )}
-                              {col.key === "due_date" && (
-                                job.due_date ? (
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-slate-400" />
-                                    {new Date(job.due_date).toLocaleDateString()}
-                                  </div>
-                                ) : (
-                                  "No due date"
-                                )
-                              )}
-                            </TableCell>
-                          ))}
-                          <TableCell className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openAIMatchesModal(job)}
-                              className="gap-2"
-                            >
-                              <Sparkles className="w-4 h-4 text-purple-600" />
-                              View Matches
-                            </Button>
-                          </TableCell>
-                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                  <Link to={createPageUrl(`JobDetails?id=${job.id}`)}>
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    View Details
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setEditingJob(job); setShowJobForm(true); }}>
-                                  <Edit className="w-4 h-4 mr-2" />
-                                  Edit Job
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link to={createPageUrl(`JobDetails?id=${job.id}`)}>
-                                    <Users className="w-4 h-4 mr-2" />
-                                    View Applications
-                                  </Link>
-                                </DropdownMenuItem>
-                                <PermissionGate entity="Job" action="delete">
-                                  <DropdownMenuItem
-                                    className="text-red-600 focus:bg-red-50 focus:text-red-700"
-                                    onClick={() => { setJobToDelete(job); setShowDelete(true); }}
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete Job
-                                  </DropdownMenuItem>
-                                </PermissionGate>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 px-4 pb-4">
-                    <p className="text-sm text-slate-600">
-                      Page {currentPage} of {totalPages}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => goToPage(1)}
-                        disabled={currentPage === 1}
-                        className="gap-1"
-                      >
-                        <ChevronsLeft className="w-4 h-4" />
-                        First
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                        Previous
-                      </Button>
-                      
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
-                          
-                          return (
-                            <Button
-                              key={pageNum}
-                              variant={currentPage === pageNum ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => goToPage(pageNum)}
-                              className="w-8 h-8 p-0"
-                            >
-                              {pageNum}
-                            </Button>
-                          );
-                        })}
-                      </div>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        Next
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => goToPage(totalPages)}
-                        disabled={currentPage === totalPages}
-                        className="gap-1"
-                      >
-                        Last
-                        <ChevronsRight className="w-4 h-4" />
-                      </Button>
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontSize:13.5, fontWeight:600, color:"#1D1D1F", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      <Link to={createPageUrl(`JobDetails?id=${job.id}`)} onClick={e=>e.stopPropagation()} style={{ color:"inherit", textDecoration:"none" }}>{job.title}</Link>
                     </div>
+                    <div style={{ fontSize:11.5, color:"#86868B" }}>{job.location || "Remote"}</div>
                   </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      ) : viewType === "kanban" ? (
-        <Card>
-          <CardContent className="p-8 text-center text-slate-500">
-            Kanban view coming soon!
-          </CardContent>
-        </Card>
-      ) : null}
+                </div>
+                <div style={{ fontSize:12.5, color:"#6E6E73", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{compName}</div>
+                <div style={{ fontSize:12, color:"#6E6E73" }}>{(job.employment_type||"").replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase()) || "—"}</div>
+                <div><span style={{ fontSize:11.5, fontWeight:600, padding:"3px 10px", borderRadius:20, background:pb.bg, color:pb.c }}>{(job.priority||"").replace(/\b\w/g,l=>l.toUpperCase()) || "—"}</span></div>
+                <div><span style={{ fontSize:11.5, fontWeight:600, padding:"3px 10px", borderRadius:20, background:sb.bg, color:sb.c }}>{(job.status||"").replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase())}</span></div>
+                <div style={{ fontSize:12.5, color:"#6E6E73" }}>{job.rate || "—"}</div>
+                <div style={{ fontSize:12, color:"#86868B" }}>{job.created_date ? timeAgo(job.created_date) : "—"}</div>
+                <div onClick={e=>e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", border:"none", background:"none", cursor:"pointer", color:"#86868B" }} className="hover:bg-black/[.07]">
+                        <MoreHorizontal style={{ width:14, height:14 }} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild><Link to={createPageUrl(`JobDetails?id=${job.id}`)}><Eye className="w-4 h-4 mr-2"/>View Details</Link></DropdownMenuItem>
+                      <DropdownMenuItem onClick={()=>{setEditingJob(job);setShowJobForm(true);}}><Edit className="w-4 h-4 mr-2"/>Edit Job</DropdownMenuItem>
+                      <DropdownMenuItem onClick={()=>handleHighlightJob(job)}><Zap className="w-4 h-4 mr-2"/>Quick Edit</DropdownMenuItem>
+                      <DropdownMenuItem onClick={()=>openAIMatchesModal(job)}><Sparkles className="w-4 h-4 mr-2"/>AI Matches</DropdownMenuItem>
+                      <PermissionGate entity="Job" action="delete">
+                        <DropdownMenuItem className="text-red-600" onClick={()=>{setJobToDelete(job);setShowDelete(true);}}><Trash2 className="w-4 h-4 mr-2"/>Delete</DropdownMenuItem>
+                      </PermissionGate>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Pagination */}
+        {!loading && allStatusFiltered.length > rowsPerPage && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:14, fontSize:13, color:"#86868B" }}>
+            <span>Showing {startIndex+1}–{Math.min(startIndex+rowsPerPage, allStatusFiltered.length)} of {allStatusFiltered.length}</span>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <button onClick={()=>goToPage(currentPage-1)} disabled={currentPage===1}
+                style={{ padding:"5px 12px", borderRadius:20, border:"1px solid #E5E5EA", background:"#fff", color:currentPage===1?"#AEAEB2":"#1D1D1F", cursor:currentPage===1?"default":"pointer", fontSize:13 }}>← Prev</button>
+              <span style={{ fontSize:12 }}>Page {currentPage} of {totalStatusPages}</span>
+              <button onClick={()=>goToPage(currentPage+1)} disabled={currentPage>=totalStatusPages}
+                style={{ padding:"5px 12px", borderRadius:20, border:"1px solid #E5E5EA", background:"#fff", color:currentPage>=totalStatusPages?"#AEAEB2":"#1D1D1F", cursor:currentPage>=totalStatusPages?"default":"pointer", fontSize:13 }}>Next →</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Edit floating bar */}
+      {highlightedJob && (
+        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", background:"#1D1D1F", borderRadius:16, padding:"14px 20px", boxShadow:"0 8px 32px rgba(0,0,0,.28)", display:"flex", alignItems:"center", gap:10, zIndex:50, flexWrap:"wrap" }}>
+          <div style={{ color:"#fff", fontSize:13, fontWeight:600 }}>{highlightedJob.title}</div>
+          <div style={{ width:1, height:18, background:"rgba(255,255,255,.15)" }} />
+          {statusOptions.map(o => <button key={o.value} onClick={()=>updateHighlightedField("status",o.value)} style={{ padding:"4px 10px", borderRadius:20, fontSize:12, fontWeight:600, border:"none", cursor:"pointer", background:currentStatus===o.value?"#0071E3":"rgba(255,255,255,.12)", color:"#fff" }}>{o.label}</button>)}
+          <div style={{ width:1, height:18, background:"rgba(255,255,255,.15)" }} />
+          <button onClick={saveHighlightedChanges} disabled={savingHighlighted||Object.keys(highlightedChanges).length===0}
+            style={{ padding:"4px 12px", borderRadius:20, fontSize:12, fontWeight:600, border:"none", cursor:"pointer", background:"#30A14E", color:"#fff", opacity:Object.keys(highlightedChanges).length===0?.5:1 }}>
+            {savingHighlighted?"Saving…":"Save"}
+          </button>
+          <button onClick={closeHighlightPanel} style={{ background:"none", border:"none", color:"rgba(255,255,255,.5)", cursor:"pointer", fontSize:16 }}>✕</button>
+        </div>
+      )}
 
       {showEmailBlast && (
         <EmailBlastModal

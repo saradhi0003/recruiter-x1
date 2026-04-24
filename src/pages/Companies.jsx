@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,8 +105,9 @@ export default function CompaniesPage() { // Renamed component
   const [selectedCompany, setSelectedCompany] = useState(null); // NEW: for general selection/preview
   const [viewType, setViewType] = useState("list"); // NEW: default view type
 
-  const [rowsPerPage, setRowsPerPage] = useState(25); // NEW
-  const [currentPage, setCurrentPage] = useState(1); // NEW
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [connStatusFilter, setConnStatusFilter] = useState("all");
 
   const { listFilterFor, me } = usePermissions();
 
@@ -629,446 +629,193 @@ export default function CompaniesPage() { // Renamed component
   );
 
 
+  // ── Derived metrics ──
+  const totalConnections = companies.length;
+  const activeConnections = companies.filter(c => c.status === "active").length;
+  const totalOpenJobs = jobs.filter(j => j.status === "open").length;
+  const prospectConnections = companies.filter(c => c.status === "prospect").length;
+
+  const connFiltered = connStatusFilter === "all" ? sortedCompanies : sortedCompanies.filter(c => c.status === connStatusFilter);
+  const totalConnPages = Math.ceil(connFiltered.length / rowsPerPage);
+  const paginatedConn = connFiltered.slice(startIndex, startIndex + rowsPerPage);
+
+  // ── Helpers ──
+  const avatarPalette = ["#3B82F6,#6366F1","#F59E0B,#EA580C","#8B5CF6,#7C3AED","#10B981,#059669","#EF4444,#DC2626","#0EA5E9,#0284C7"];
+  const avatarGrad = (name) => { const p = avatarPalette[(name?.charCodeAt(0)||0) % avatarPalette.length].split(","); return `linear-gradient(135deg,${p[0]},${p[1]})`; };
+  const getInitials = (name) => name ? name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() : "?";
+  const connStatusBadge = (s) => ({ active:{bg:"rgba(48,161,78,.12)",c:"#16A34A"}, prospect:{bg:"rgba(0,113,227,.10)",c:"#0071E3"}, inactive:{bg:"rgba(0,0,0,.06)",c:"#86868B"} }[s] || {bg:"rgba(0,0,0,.06)",c:"#86868B"});
+  const timeAgo = (d) => { const days = Math.floor((Date.now()-new Date(d))/86400000); return days===0?"Today":days===1?"1d ago":days<7?`${days}d ago`:`${Math.floor(days/7)}w ago`; };
+
   return (
-    <div className="p-6 lg:p-8 space-y-6 relative">
-      <PageHeader
-        title="Connections" // Updated title
-        subtitle="Manage your client and partner companies" // Updated subtitle
-        right={
+    <div style={{ fontFamily:"-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background:"#F5F5F7", minHeight:"100vh" }}>
+
+      {/* ── Metrics bar ── */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", background:"#fff", borderBottom:"1px solid #E5E5EA" }}>
+        {[
+          { label:"Total Connections", value:loading?"—":totalConnections, sub:"in network" },
+          { label:"Active", value:loading?"—":activeConnections, sub:"current clients", subColor:"#30A14E" },
+          { label:"Open Roles", value:loading?"—":totalOpenJobs, sub:"across all clients", valColor:"#0071E3" },
+          { label:"Prospects", value:loading?"—":prospectConnections, sub:"in pipeline" },
+        ].map((m,i) => (
+          <div key={i} style={{ padding:"22px 28px", borderRight:i<3?"1px solid #E5E5EA":"none" }}>
+            <div style={{ fontSize:11.5, fontWeight:500, color:"#86868B", marginBottom:5 }}>{m.label}</div>
+            <div style={{ fontSize:42, fontWeight:700, letterSpacing:"-.04em", lineHeight:1, color:m.valColor||"#1D1D1F" }}>{m.value}</div>
+            <div style={{ fontSize:11.5, color:m.subColor||"#86868B", marginTop:6 }}>{m.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Filter bar ── */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"12px 24px", background:"#fff", borderBottom:"1px solid #E5E5EA", flexWrap:"wrap" }}>
+        <span style={{ fontSize:12, fontWeight:600, color:"#86868B", marginRight:4 }}>Status</span>
+        {[{k:"all",l:"All"},{k:"active",l:"Active"},{k:"prospect",l:"Prospect"},{k:"inactive",l:"Inactive"}].map(s => (
+          <button key={s.k} onClick={() => { setConnStatusFilter(s.k); setCurrentPage(1); }}
+            style={{ padding:"5px 13px", borderRadius:20, fontSize:13, fontWeight:connStatusFilter===s.k?600:500, border:"none", cursor:"pointer", background:connStatusFilter===s.k?"#1D1D1F":"#fff", color:connStatusFilter===s.k?"#fff":"#6E6E73", boxShadow:connStatusFilter===s.k?"none":"0 1px 4px rgba(0,0,0,.08),0 0 0 .5px rgba(0,0,0,.06)", transition:"all 120ms" }}>
+            {s.l}
+          </button>
+        ))}
+
+        {/* Search */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(0,0,0,.06)", borderRadius:10, padding:"5px 10px", marginLeft:8 }}>
+          <Search style={{ width:13, height:13, color:"#86868B" }} />
+          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search connections…"
+            style={{ border:"none", background:"transparent", outline:"none", fontSize:13, color:"#1D1D1F", width:160 }} />
+        </div>
+
+        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button style={{ padding:"6px 14px", borderRadius:20, fontSize:13, fontWeight:500, border:"1px solid #E5E5EA", background:"#fff", color:"#6E6E73", cursor:"pointer" }}>More ▾</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => loadCompanies(true)}><RefreshCcw className="w-4 h-4 mr-2" />Refresh</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowEmailBlast(true)}><MailPlus className="w-4 h-4 mr-2" />Email Blast</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowImport(true)}><Upload className="w-4 h-4 mr-2" />Import CSV</DropdownMenuItem>
+              {selectedIds.size > 0 && <DropdownMenuItem onClick={() => setShowBulkUpdate(true)}>Mass Update ({selectedIds.size})</DropdownMenuItem>}
+              {selectedIds.size > 0 && <DropdownMenuItem onClick={() => setShowBulkDelete(true)} className="text-red-600">Delete Selected ({selectedIds.size})</DropdownMenuItem>}
+              <DropdownMenuItem onClick={() => { setSelectedViewId(null); setShowViewSettings(true); }}>+ New View</DropdownMenuItem>
+              {currentView && <DropdownMenuItem onClick={() => setShowViewSettings(true)}>Edit View</DropdownMenuItem>}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <PermissionGate entity="Company" action="create">
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-2 bg-white text-blue-700 hover:bg-slate-50" onClick={() => loadCompanies(true)}>
-                <RefreshCcw className="w-4 h-4" />
-                Refresh
-              </Button>
-              <Button onClick={() => { setShowForm(true); setFormCompany(null); setSelectedCompany(null); setHighlightedCompany(null); }} className="gap-2 bg-white text-blue-700 hover:bg-slate-50">
-                <Plus className="w-4 h-4" />
-                Add Connection
-              </Button>
-            </div>
+            <button onClick={() => { setShowForm(true); setFormCompany(null); setSelectedCompany(null); setHighlightedCompany(null); }}
+              style={{ padding:"7px 16px", borderRadius:20, fontSize:13, fontWeight:600, border:"none", background:"#0071E3", color:"#fff", cursor:"pointer", boxShadow:"0 2px 8px rgba(0,113,227,.3)" }}>
+              + Add Connection
+            </button>
           </PermissionGate>
-        }
-      />
+        </div>
+      </div>
 
-      {/* Highlight Panel */}
-      {highlightedCompany && (
-        <Card className="border-2 border-blue-500 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center text-lg font-semibold">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">
-                    {highlightedCompany.name}
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    {highlightedCompany.industry && (
-                      <span>{highlightedCompany.industry}</span>
-                    )}
-                    {highlightedCompany.location && (
-                      <>
-                        <span>•</span>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {highlightedCompany.location}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
+      {/* ── Table ── */}
+      <div style={{ padding:"20px 24px 40px" }}>
+        <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 2px 12px rgba(0,0,0,.07),0 0 0 .5px rgba(0,0,0,.05)", overflow:"hidden" }}>
+          {/* Header */}
+          <div style={{ display:"grid", gridTemplateColumns:"1.8fr 120px 130px 90px 90px 80px 36px", gap:0, padding:"9px 20px", borderBottom:"1px solid #E5E5EA", background:"#FAFAFA" }}>
+            {["CONNECTION","INDUSTRY","PRIMARY CONTACT","OPEN JOBS","STATUS","ADDED",""].map((h,i) => (
+              <div key={i} style={{ fontSize:11, fontWeight:600, letterSpacing:".04em", color:"#86868B", display:"flex", alignItems:"center", gap:i===0?8:0 }}>
+                {i===0 && <Checkbox checked={allVisibleSelected} onCheckedChange={c=>toggleSelectAllVisible(!!c)} />}
+                {h}
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={closeHighlightPanel}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            {/* Status Update Section */}
-            <div className="mb-4">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                Quick Status Update
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {statusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updateHighlightedField("status", option.value)}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all font-medium text-sm ${
-                      currentStatus === option.value
-                        ? option.color + " shadow-sm"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Type Update Section */}
-            <div className="mb-4">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                Quick Type Update
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {typeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updateHighlightedField("type", option.value)}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all font-medium text-sm ${
-                      currentType === option.value
-                        ? option.color + " shadow-sm"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3 pt-4 border-t">
-              <Button
-                onClick={saveHighlightedChanges}
-                disabled={savingHighlighted || Object.keys(highlightedChanges).length === 0}
-                className="gap-2"
-              >
-                {savingHighlighted ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Save Changes
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowForm(true);
-                  setFormCompany(highlightedCompany); // Use formCompany
-                  closeHighlightPanel();
-                }}
-                className="gap-2"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Full Company
-              </Button>
-              {Object.keys(highlightedChanges).length > 0 && (
-                <Badge className="ml-auto bg-orange-100 text-orange-800">
-                  {Object.keys(highlightedChanges).length} unsaved change{Object.keys(highlightedChanges).length > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Search companies by name or industry..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-2 whitespace-nowrap">
-                <Filter className="w-4 h-4" />
-                Filters
-              </Button>
-              <PermissionGate entity="Company" action="create">
-                <Button variant="outline" className="gap-2 whitespace-nowrap" onClick={() => setShowImport(true)}>
-                  <Upload className="w-4 h-4" />
-                  Import
-                </Button>
-              </PermissionGate>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* View controls */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <select
-            className="border rounded px-3 py-2 text-sm bg-white text-slate-700"
-            value={selectedViewId || ""}
-            onChange={(e) => setSelectedViewId(e.target.value || null)}
-          >
-            <option value="">Default View</option>
-            {views.map(v => (
-              <option key={v.id} value={v.id}>{v.name}</option>
             ))}
-          </select>
-          <Button variant="outline" className="gap-2" onClick={() => setShowViewSettings(true)} disabled={!currentView}>
-            Edit View
-          </Button>
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { setSelectedViewId(null); setShowViewSettings(true); }}>
-            New View
-          </Button>
-        </div>
-        <div className="text-sm text-slate-600">{summarizeFilters(currentView)}</div>
-      </div>
-
-      {/* Count and Rows per page */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-600">
-          Showing {paginatedCompanies.length === 0 ? 0 : startIndex + 1}-{startIndex + paginatedCompanies.length} of {sortedCompanies.length} connections
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-600">Rows per page:</span>
-          <select
-            value={rowsPerPage}
-            onChange={(e) => handleRowsPerPageChange(e.target.value)}
-            className="border border-slate-200 rounded px-3 py-1.5 text-sm bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="500">500</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Bulk actions toolbar */}
-      {selectedIds.size > 0 && ( // Changed .length to .size
-        <div className="flex items-center justify-between p-3 border rounded bg-white">
-          <div className="text-sm text-slate-700">{selectedIds.size} selected</div> {/* Changed .length to .size */}
-          <div className="flex gap-2">
-            <PermissionGate entity="Company" action="update">
-              <Button variant="outline" className="gap-2" onClick={() => setShowBulkUpdate(true)}>
-                <Edit className="w-4 h-4" />
-                Update
-              </Button>
-            </PermissionGate>
-            <PermissionGate entity="Company" action="delete">
-              <Button className="gap-2 bg-red-600 hover:bg-red-700 text-white" onClick={() => setShowBulkDelete(true)}>
-                <Trash className="w-4 h-4" />
-                Delete
-              </Button>
-            </PermissionGate>
           </div>
-        </div>
-      )}
 
-      {/* Updated Table - add Quick Edit column */}
-      {viewType === "list" && ( // Conditional rendering for list view
-        <>
           {loading ? (
-            <SkeletonTablePlaceholder />
-          ) : sortedCompanies.length === 0 ? ( // Check if there are ANY results after filter/sort
-            <div className="p-12 text-center">
-              <Building2 className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="font-semibold text-slate-900 mb-2">No connections found</h3>
-              <p className="text-slate-600 mb-4">
-                {searchTerm || (currentView && Object.keys(currentView.filters || {}).length > 0) ? "Try adjusting your search criteria or view filters" : "Get started by adding your first connection"}
-              </p>
-              <PermissionGate entity="Company" action="create">
-                <Button onClick={() => { setShowForm(true); setFormCompany(null); }} className="gap-2"> {/* Use setFormCompany */}
-                  <Plus className="w-4 h-4" />
-                  Add First Connection
-                </Button>
-              </PermissionGate>
+            <div style={{ padding:"48px", textAlign:"center", color:"#86868B" }}>
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" style={{ color:"#0071E3" }} />
+              <div style={{ fontSize:13 }}>Loading connections…</div>
             </div>
-          ) : (
-            <>
-              <Card>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-slate-50 border-b">
-                        <tr>
-                          <th className="px-4 py-3 text-left">
-                            <Checkbox
-                              checked={allVisibleSelected}
-                              className={someVisibleSelected ? "data-[state=checked]:bg-primary" : ""}
-                              onCheckedChange={(checked) => toggleSelectAllVisible(!!checked)}
-                            />
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
-                            Quick Edit
-                          </th>
-                          {finalVisibleColumns.map(col => ( // Use finalVisibleColumns
-                            <th
-                              key={col.key}
-                              className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-slate-100"
-                              onClick={() => col.sortable && handleSort(col.key)} // Only sort if sortable
-                            >
-                              <div className="flex items-center gap-1">
-                                {col.label}
-                                {col.sortable && sortBy === col.key && ( // Only show icon if sortable and currently sorting by this column
-                                  sortOrder === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                                )}
-                                {col.sortable && sortBy !== col.key && ( // Show neutral arrow if sortable but not current sort
-                                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-                                )}
-                              </div>
-                            </th>
-                          ))}
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {paginatedCompanies.map(company => ( // Changed filteredCompanies to sortedCompanies, and now paginatedCompanies
-                          <tr
-                            key={company.id}
-                            className={`hover:bg-slate-50 transition-colors cursor-pointer ${
-                              highlightedCompany?.id === company.id ? "bg-blue-50" : ""
-                            }`}
-                            onClick={() => setSelectedCompany(company)}
-                          >
-                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={selectedIds.has(company.id)} // Use .has()
-                                onCheckedChange={() => toggleSelect(company.id)}
-                              />
-                            </td>
-                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleHighlightCompany(company)}
-                                className="h-8 text-xs"
-                              >
-                                <Zap className="w-3 h-3 mr-1" />
-                                Quick Edit
-                              </Button>
-                            </td>
-                            {finalVisibleColumns.map((col) => { // Use finalVisibleColumns
-                              return (
-                                <td key={`${company.id}-${col.key}`} className="px-4 py-3">
-                                  {typeof col.render === "function" ? col.render(company) : null}
-                                </td>
-                              );
-                            })}
-                            <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => { setSelectedCompanyId(company.id); setShowDetails(true); }}>
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <PermissionGate entity="Company" action="update">
-                                    <DropdownMenuItem onClick={() => { setFormCompany(company); setShowForm(true); }}> {/* Use setFormCompany */}
-                                      <Edit className="w-4 h-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                  </PermissionGate>
-                                  <PermissionGate entity="Company" action="delete">
-                                    <DropdownMenuItem className="text-red-600" onClick={() => { setCompanyToDelete(company); setShowDelete(true); }}>
-                                      <Trash className="w-4 h-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </PermissionGate>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+          ) : paginatedConn.length === 0 ? (
+            <div style={{ padding:"60px", textAlign:"center" }}>
+              <Building2 style={{ width:36, height:36, color:"#AEAEB2", margin:"0 auto 12px" }} />
+              <div style={{ fontSize:15, fontWeight:600, color:"#1D1D1F", marginBottom:6 }}>No connections found</div>
+              <div style={{ fontSize:13, color:"#86868B" }}>{searchTerm ? "Try adjusting your search" : "Add your first connection to get started"}</div>
+            </div>
+          ) : paginatedConn.map((company, idx) => {
+            const isSelected = selectedCompany?.id === company.id;
+            const sb = connStatusBadge(company.status);
+            const primaryContact = company.contacts?.find(c=>c.is_primary) || company.contacts?.[0];
+            const openJobsCount = jobCounts.get(company.id) || 0;
+
+            return (
+              <div key={company.id} onClick={() => setSelectedCompany(company)}
+                style={{ display:"grid", gridTemplateColumns:"1.8fr 120px 130px 90px 90px 80px 36px", gap:0, padding:"10px 20px", borderBottom:idx<paginatedConn.length-1?"1px solid #F2F2F7":"none", alignItems:"center", cursor:"pointer", background:isSelected?"rgba(0,113,227,.05)":"transparent", transition:"background 100ms" }}
+                onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background="#F9F9FB"; }}
+                onMouseLeave={e => { e.currentTarget.style.background=isSelected?"rgba(0,113,227,.05)":"transparent"; }}>
+
+                {/* Company */}
+                <div style={{ display:"flex", alignItems:"center", gap:10, minWidth:0 }}>
+                  <Checkbox checked={selectedIds.has(company.id)} onCheckedChange={() => toggleSelect(company.id)} onClick={e=>e.stopPropagation()} />
+                  <div style={{ width:32, height:32, borderRadius:8, background:avatarGrad(company.name), color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, flexShrink:0 }}>
+                    {getInitials(company.name)}
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between py-4">
-                  <p className="text-sm text-slate-600">
-                    Page {currentPage} of {totalPages}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goToPage(1)}
-                      disabled={currentPage === 1}
-                      className="gap-1"
-                    >
-                      <ChevronsLeft className="w-4 h-4" />
-                      First
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="w-4 h-4 mr-1" />
-                      Previous
-                    </Button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-
-                        if (pageNum < 1 || pageNum > totalPages) return null; // Ensure pageNum is within valid bounds
-                        
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={currentPage === pageNum ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => goToPage(pageNum)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontSize:13.5, fontWeight:600, color:"#1D1D1F", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      <button onClick={e => { e.stopPropagation(); setSelectedCompanyId(company.id); setShowDetails(true); }} style={{ background:"none", border:"none", cursor:"pointer", color:"inherit", fontWeight:"inherit", fontSize:"inherit", padding:0 }}>
+                        {company.name}
+                      </button>
                     </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                      <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goToPage(totalPages)}
-                      disabled={currentPage === totalPages}
-                      className="gap-1"
-                    >
-                      Last
-                      <ChevronsRight className="w-4 h-4" />
-                    </Button>
+                    <div style={{ fontSize:11.5, color:"#86868B" }}>{company.location || "—"}</div>
                   </div>
                 </div>
-              )}
-            </>
-          )}
-        </>
+                <div style={{ fontSize:12.5, color:"#6E6E73", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{company.industry || "—"}</div>
+                <div style={{ fontSize:12.5, color:"#6E6E73", minWidth:0 }}>
+                  {primaryContact ? <div><div style={{ fontWeight:600, color:"#1D1D1F", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{primaryContact.name}</div><div style={{ fontSize:11 }}>{primaryContact.email || "—"}</div></div> : "—"}
+                </div>
+                <div style={{ fontSize:13, fontWeight:600, color:openJobsCount>0?"#0071E3":"#AEAEB2" }}>{openJobsCount > 0 ? openJobsCount : "—"}</div>
+                <div><span style={{ fontSize:11.5, fontWeight:600, padding:"3px 10px", borderRadius:20, background:sb.bg, color:sb.c }}>{(company.status||"").replace(/\b\w/g,l=>l.toUpperCase()) || "—"}</span></div>
+                <div style={{ fontSize:12, color:"#86868B" }}>{company.created_date ? timeAgo(company.created_date) : "—"}</div>
+                <div onClick={e=>e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", border:"none", background:"none", cursor:"pointer", color:"#86868B" }} className="hover:bg-black/[.07]">
+                        <MoreHorizontal style={{ width:14, height:14 }} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={()=>{setSelectedCompanyId(company.id);setShowDetails(true);}}><Eye className="w-4 h-4 mr-2"/>View Details</DropdownMenuItem>
+                      <PermissionGate entity="Company" action="update">
+                        <DropdownMenuItem onClick={()=>{setFormCompany(company);setShowForm(true);}}><Edit className="w-4 h-4 mr-2"/>Edit</DropdownMenuItem>
+                      </PermissionGate>
+                      <DropdownMenuItem onClick={()=>handleHighlightCompany(company)}><Zap className="w-4 h-4 mr-2"/>Quick Edit</DropdownMenuItem>
+                      <PermissionGate entity="Company" action="delete">
+                        <DropdownMenuItem className="text-red-600" onClick={()=>{setCompanyToDelete(company);setShowDelete(true);}}><Trash className="w-4 h-4 mr-2"/>Delete</DropdownMenuItem>
+                      </PermissionGate>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Pagination */}
+        {!loading && connFiltered.length > rowsPerPage && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:14, fontSize:13, color:"#86868B" }}>
+            <span>Showing {startIndex+1}–{Math.min(startIndex+rowsPerPage, connFiltered.length)} of {connFiltered.length}</span>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <button onClick={()=>goToPage(currentPage-1)} disabled={currentPage===1}
+                style={{ padding:"5px 12px", borderRadius:20, border:"1px solid #E5E5EA", background:"#fff", color:currentPage===1?"#AEAEB2":"#1D1D1F", cursor:currentPage===1?"default":"pointer", fontSize:13 }}>← Prev</button>
+              <span style={{ fontSize:12 }}>Page {currentPage} of {totalConnPages}</span>
+              <button onClick={()=>goToPage(currentPage+1)} disabled={currentPage>=totalConnPages}
+                style={{ padding:"5px 12px", borderRadius:20, border:"1px solid #E5E5EA", background:"#fff", color:currentPage>=totalConnPages?"#AEAEB2":"#1D1D1F", cursor:currentPage>=totalConnPages?"default":"pointer", fontSize:13 }}>Next →</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Edit floating bar */}
+      {highlightedCompany && (
+        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", background:"#1D1D1F", borderRadius:16, padding:"14px 20px", boxShadow:"0 8px 32px rgba(0,0,0,.28)", display:"flex", alignItems:"center", gap:10, zIndex:50, flexWrap:"wrap" }}>
+          <div style={{ color:"#fff", fontSize:13, fontWeight:600 }}>{highlightedCompany.name}</div>
+          <div style={{ width:1, height:18, background:"rgba(255,255,255,.15)" }} />
+          {statusOptions.map(o => <button key={o.value} onClick={()=>updateHighlightedField("status",o.value)} style={{ padding:"4px 10px", borderRadius:20, fontSize:12, fontWeight:600, border:"none", cursor:"pointer", background:currentStatus===o.value?"#0071E3":"rgba(255,255,255,.12)", color:"#fff" }}>{o.label}</button>)}
+          <div style={{ width:1, height:18, background:"rgba(255,255,255,.15)" }} />
+          <button onClick={saveHighlightedChanges} disabled={savingHighlighted||Object.keys(highlightedChanges).length===0}
+            style={{ padding:"4px 12px", borderRadius:20, fontSize:12, fontWeight:600, border:"none", cursor:"pointer", background:"#30A14E", color:"#fff", opacity:Object.keys(highlightedChanges).length===0?.5:1 }}>
+            {savingHighlighted?"Saving…":"Save"}
+          </button>
+          <button onClick={closeHighlightPanel} style={{ background:"none", border:"none", color:"rgba(255,255,255,.5)", cursor:"pointer", fontSize:16 }}>✕</button>
+        </div>
       )}
 
       {showForm && (
