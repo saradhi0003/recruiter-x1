@@ -112,13 +112,27 @@ Deno.serve(async (req) => {
     }
 
     // Load job
-    const job = await base44.entities.Job.list("", 1).then(jobs => jobs.find(j => j.id === job_id));
+    let job;
+    try {
+      const jobs = await base44.entities.Job.list("-created_date", 100);
+      job = jobs.find(j => j.id === job_id);
+    } catch (err) {
+      console.error("Failed to load job:", err);
+      job = null;
+    }
+    
     if (!job) {
       return Response.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Load candidates
-    const candidates = await base44.entities.Candidate.list("-created_date", 200);
+    let candidates = [];
+    try {
+      candidates = await base44.entities.Candidate.list("-created_date", 200);
+    } catch (err) {
+      console.error("Failed to load candidates:", err);
+      candidates = [];
+    }
 
     // Filter candidates
     let filtered = candidates.filter(c => {
