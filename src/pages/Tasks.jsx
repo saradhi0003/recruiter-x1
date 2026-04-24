@@ -453,7 +453,7 @@ export default function Tasks() {
     try {
       const newStatus = destination.droppableId;
       await base44.entities.Task.update(draggableId, { status: newStatus });
-      await loadTasks(true);
+      setTasks(tasks.map(t => t.id === draggableId ? { ...t, status: newStatus } : t));
       addNotification({ type: "success", title: "Task Status Updated", message: `Task '${taskToUpdate.title}' moved to ${newStatus.replace('_', ' ')}.` });
     } catch (error) {
       console.error("Error updating task status on drag:", error);
@@ -491,6 +491,7 @@ export default function Tasks() {
     setSavingHighlighted(true);
     try {
       await base44.entities.Task.update(highlightedTask.id, highlightedChanges);
+      setTasks(tasks.map(t => t.id === highlightedTask.id ? { ...t, ...highlightedChanges } : t));
       addNotification({
         type: "success",
         title: "Updated",
@@ -498,7 +499,6 @@ export default function Tasks() {
       });
       setHighlightedTask(null);
       setHighlightedChanges({});
-      await loadTasks(true);
     } catch (error) {
       console.error("Error updating task:", error);
       addNotification({ type: "error", title: "Error", message: "Failed to update task" });
