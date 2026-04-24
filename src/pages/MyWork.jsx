@@ -257,6 +257,8 @@ export default function MyWork() {
 
   const draftTimesheets = myTimesheets.filter(t => t.status === "draft");
   const submittedTimesheets = myTimesheets.filter(t => t.status === "submitted");
+  // Force cache bust
+  const _cacheBust = Date.now();
 
   return (
     <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif", background: "#F5F5F7", minHeight: "100vh" }}>
