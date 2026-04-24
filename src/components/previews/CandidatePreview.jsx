@@ -16,8 +16,15 @@ const STATUS_OPTS = [
 ];
 
 function avatarGrad(name) {
-  const p = ["#3B82F6,#6366F1","#F59E0B,#EA580C","#8B5CF6,#7C3AED","#10B981,#059669","#EC4899,#DB2777"];
-  const [a, b] = p[(name?.charCodeAt(0)||0) % p.length].split(",");
+  const colors = [
+    "#EC4899,#DB2777", // pink
+    "#F59E0B,#EA580C", // orange
+    "#3B82F6,#1E40AF", // blue
+    "#10B981,#059669", // green
+    "#8B5CF6,#7C3AED", // purple
+    "#EF4444,#DC2626"  // red
+  ];
+  const [a, b] = colors[(name?.charCodeAt(0)||0) % colors.length].split(",");
   return `linear-gradient(135deg,${a},${b})`;
 }
 
@@ -103,11 +110,11 @@ export default function CandidatePreview({ id }) {
         </div>
       </div>
 
-      {/* Quick status update */}
+      {/* Status control */}
       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F2F2F7" }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "#86868B", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Update Status</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#86868B", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Status</div>
         <Select value={status || candidate.status} onValueChange={updateStatus} disabled={saving}>
-          <SelectTrigger style={{ fontSize: 13, borderRadius: 10 }}>
+          <SelectTrigger style={{ fontSize: 13, borderRadius: 8 }}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -118,27 +125,31 @@ export default function CandidatePreview({ id }) {
 
       {/* Contact info */}
       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F2F2F7" }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "#86868B", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 10 }}>Contact Info</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#86868B", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 10 }}>Contact</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {candidate.email && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
-              <Mail style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} /> {candidate.email}
+              <Mail style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{candidate.email}</span>
             </div>
           )}
           {candidate.phone && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
-              <Phone style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} /> {candidate.phone}
+              <Phone style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
+              {candidate.phone}
             </div>
           )}
           {candidate.location && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
-              <MapPin style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} /> {candidate.location}
+              <MapPin style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
+              {candidate.location}
             </div>
           )}
           {candidate.linkedin_url && (
             <a href={candidate.linkedin_url} target="_blank" rel="noreferrer"
               style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#0071E3", textDecoration: "none" }}>
-              <LinkedinIcon style={{ width: 14, height: 14, flexShrink: 0 }} /> LinkedIn Profile
+              <LinkedinIcon style={{ width: 14, height: 14, flexShrink: 0 }} />
+              LinkedIn
             </a>
           )}
         </div>
@@ -146,21 +157,24 @@ export default function CandidatePreview({ id }) {
 
       {/* Professional details */}
       <div style={{ padding: "14px 20px", borderBottom: "1px solid #F2F2F7" }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "#86868B", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 10 }}>Details</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#86868B", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 10 }}>Profile</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {candidate.current_company && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
-              <Briefcase style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} /> {candidate.current_company}
+              <Briefcase style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
+              {candidate.current_company}
             </div>
           )}
           {candidate.experience_years != null && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
-              <Zap style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} /> {candidate.experience_years}+ years experience
+              <Zap style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
+              {candidate.experience_years}+ years
             </div>
           )}
           {candidate.salary_expectation && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1D1D1F" }}>
-              <Code2 style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} /> ${candidate.salary_expectation.toLocaleString()}
+              <Calendar style={{ width: 14, height: 14, color: "#86868B", flexShrink: 0 }} />
+              ${candidate.salary_expectation.toLocaleString()}
             </div>
           )}
         </div>
