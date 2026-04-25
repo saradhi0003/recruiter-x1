@@ -23,7 +23,7 @@ export const PAGES = {
     "EmailSettings": lazy(() => import('./pages/EmailSettings')),
     "EmailTemplateBuilder": lazy(() => import('./pages/EmailTemplateBuilder')),
     "Expenses": lazy(() => import('./pages/Expenses')),
-    "Goals": lazy(() => import('./pages/Goals')),
+
     "Home": lazy(() => import('./pages/Home')),
     "Invoices": lazy(() => import('./pages/Invoices')),
     "JobDetails": lazy(() => import('./pages/JobDetails')),

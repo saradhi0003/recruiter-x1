@@ -75,11 +75,7 @@ const navigationItems = [
     url: createPageUrl("Tasks"),
     icon: CheckSquare,
   },
-  {
-    title: "Goals",
-    url: createPageUrl("Goals"),
-    icon: CheckCircle,
-  },
+
   {
     title: "Duplicate Manager",
     url: createPageUrl("DuplicateManager"),
@@ -674,7 +670,7 @@ export default function Layout({ children, currentPageName }) {
             <NavItem to={createPageUrl("ResumeStudio")} icon={BrainCircuit} label="Resume Studio" active={location.pathname === createPageUrl("ResumeStudio")} />
             <NavItem to={createPageUrl("MyWork")} icon={Clock} label="My Work" active={location.pathname === createPageUrl("MyWork")} />
             <NavItem to={createPageUrl("Playbooks")} icon={BookOpen} label="Playbooks" active={location.pathname === createPageUrl("Playbooks")} />
-            <NavItem to={createPageUrl("Goals")} icon={CheckCircle} label="Goals" active={location.pathname === createPageUrl("Goals")} />
+
             <NavItem to={createPageUrl("DuplicateManager")} icon={AlertTriangle} label="Duplicates" active={location.pathname === createPageUrl("DuplicateManager")} />
             <NavItem to={createPageUrl("EmailSettings")} icon={Mail} label="Email Settings" active={location.pathname === createPageUrl("EmailSettings")} />
 
@@ -764,7 +760,7 @@ export default function Layout({ children, currentPageName }) {
                 location.pathname.includes('ResumeStudio') ? 'Resume Studio' :
                 location.pathname.includes('MyWork') ? 'My Work' :
                 location.pathname.includes('Playbooks') ? 'Playbooks' :
-                location.pathname.includes('Goals') ? 'Goals' :
+
                 location.pathname.includes('AIAgents') ? 'AI Agents' :
                 location.pathname.includes('AutomationRules') ? 'Automation' :
                 location.pathname.includes('EmailInbox') ? 'Email Inbox' :
