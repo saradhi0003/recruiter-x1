@@ -1,0 +1,150 @@
+{
+  "name": "InboundChannelMessage",
+  "type": "object",
+  "properties": {
+    "channel_connection_id": {
+      "type": "string",
+      "description": "Related ChannelConnection ID"
+    },
+    "channel_type": {
+      "type": "string",
+      "enum": [
+        "telegram",
+        "slack",
+        "email_inbound",
+        "whatsapp"
+      ],
+      "description": "Source channel type"
+    },
+    "external_message_id": {
+      "type": "string",
+      "description": "Telegram message_id, Slack ts, or email Message-ID"
+    },
+    "sender": {
+      "type": "string",
+      "description": "Sender identifier: phone, Slack user ID, or email address"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Human-readable sender name"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Email subject line (null for chat messages)"
+    },
+    "body": {
+      "type": "string",
+      "description": "Message body text"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "File attachments included with the message"
+    },
+    "raw_payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Full raw JSON payload for audit and replay"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the message was received"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "job",
+        "resume",
+        "reply",
+        "spam",
+        "unknown"
+      ],
+      "description": "AI classification of message content"
+    },
+    "classification_confidence": {
+      "type": "number",
+      "description": "Confidence score (0-1) of the classification"
+    },
+    "processing_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processed",
+        "failed",
+        "ignored"
+      ],
+      "default": "pending",
+      "description": "Current processing state"
+    },
+    "processed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When processing was completed"
+    },
+    "resulting_entity_type": {
+      "type": "string",
+      "enum": [
+        "Job",
+        "Candidate",
+        "Application"
+      ],
+      "description": "Type of entity created as a result of processing"
+    },
+    "resulting_entity_id": {
+      "type": "string",
+      "description": "ID of the resulting entity"
+    },
+    "ai_recruiter_run_id": {
+      "type": "string",
+      "description": "Links to the related AIRecruiterRun"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Error details if processing_status is failed"
+    }
+  },
+  "required": [
+    "channel_type",
+    "processing_status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

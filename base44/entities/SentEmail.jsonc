@@ -1,0 +1,112 @@
+{
+  "name": "SentEmail",
+  "type": "object",
+  "properties": {
+    "draft_id": {
+      "type": "string",
+      "description": "Related EmailDraft ID"
+    },
+    "to_email": {
+      "type": "string",
+      "description": "Primary recipient email address"
+    },
+    "cc": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "CC recipients"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Email subject line"
+    },
+    "body": {
+      "type": "string",
+      "description": "Email body content"
+    },
+    "message_id": {
+      "type": "string",
+      "description": "RFC822 Message-ID for threading (generated on send)"
+    },
+    "in_reply_to": {
+      "type": "string",
+      "description": "Message-ID of the email being replied to (for follow-ups)"
+    },
+    "thread_id": {
+      "type": "string",
+      "description": "Logical thread grouping identifier"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "postmark",
+        "gmail",
+        "zoho"
+      ],
+      "default": "postmark",
+      "description": "Email provider used to send"
+    },
+    "provider_message_id": {
+      "type": "string",
+      "description": "Provider-specific message ID (e.g. Postmark message ID)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "delivered",
+        "opened",
+        "replied",
+        "bounced"
+      ],
+      "default": "sent",
+      "description": "Current delivery status"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the email was sent"
+    },
+    "related_entity_type": {
+      "type": "string",
+      "description": "Type of the related entity (Job, Candidate, Submission, etc.)"
+    },
+    "related_entity_id": {
+      "type": "string",
+      "description": "ID of the related entity"
+    }
+  },
+  "required": [
+    "to_email",
+    "subject",
+    "body",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

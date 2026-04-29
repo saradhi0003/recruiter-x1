@@ -1,0 +1,72 @@
+{
+  "name": "ChannelConnection",
+  "type": "object",
+  "properties": {
+    "channel_type": {
+      "type": "string",
+      "enum": [
+        "telegram",
+        "slack",
+        "email_inbound",
+        "whatsapp"
+      ],
+      "description": "Type of channel"
+    },
+    "channel_name": {
+      "type": "string",
+      "description": "Display name, e.g. 'Acme Staffing Telegram Group'"
+    },
+    "external_id": {
+      "type": "string",
+      "description": "Telegram chat_id, Slack channel_id, or email alias"
+    },
+    "credentials": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Bot tokens, webhook secrets, or other channel-specific credentials"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this channel connection is active"
+    },
+    "filter_keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional keyword pre-filter for incoming messages"
+    },
+    "default_classification": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "job",
+        "resume"
+      ],
+      "default": "auto",
+      "description": "Default classification if auto-detection is bypassed"
+    },
+    "workspace_id": {
+      "type": "string",
+      "description": "Associated workspace identifier"
+    },
+    "setup_notes": {
+      "type": "string",
+      "description": "Internal notes on how this connection was configured"
+    }
+  },
+  "required": [
+    "channel_type",
+    "channel_name",
+    "external_id"
+  ],
+  "rls": {
+    "read": {},
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

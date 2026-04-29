@@ -27,7 +27,9 @@
         "client_submission",
         "candidate_outreach",
         "follow_up",
-        "internal_note"
+        "internal_note",
+        "recruiter_clarification",
+        "followup"
       ],
       "description": "Type of email draft"
     },
@@ -61,16 +63,18 @@
       "type": "string",
       "enum": [
         "draft",
+        "pending_approval",
         "approved",
         "rejected",
-        "sent"
+        "sent",
+        "send_failed"
       ],
       "default": "draft",
       "description": "Draft status"
     },
     "external_draft_id": {
       "type": "string",
-      "description": "ID from external system (Gmail, Zoho)"
+      "description": "ID from external system (Gmail, Zoho, Postmark)"
     },
     "created_by_ai": {
       "type": "boolean",
@@ -89,11 +93,17 @@
     "model_used": {
       "type": "string",
       "description": "LLM model used for drafting"
+    },
+    "followup_schedule_id": {
+      "type": "string",
+      "description": "Related FollowupSchedule ID (nullable, for follow-up draft types)"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Reason for rejection if status is rejected"
     }
   },
   "required": [
-    "run_id",
-    "job_id",
     "draft_type",
     "subject",
     "body"
