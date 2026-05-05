@@ -1,0 +1,157 @@
+{
+  "name": "Invoice",
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": "string",
+      "description": "Human-friendly invoice number"
+    },
+    "company_id": {
+      "type": "string",
+      "description": "Billed company ID"
+    },
+    "bill_to_name": {
+      "type": "string",
+      "description": "Recipient name"
+    },
+    "bill_to_email": {
+      "type": "string",
+      "description": "Recipient email"
+    },
+    "bill_to_address": {
+      "type": "string",
+      "description": "Recipient address"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Issue date"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Due date"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD",
+      "description": "Currency code"
+    },
+    "items": {
+      "type": "array",
+      "description": "Line items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "default": 1
+          },
+          "unit_price": {
+            "type": "number",
+            "default": 0
+          },
+          "amount": {
+            "type": "number",
+            "description": "quantity * unit_price (stored for convenience)"
+          }
+        },
+        "required": [
+          "description",
+          "quantity",
+          "unit_price"
+        ]
+      }
+    },
+    "subtotal": {
+      "type": "number",
+      "description": "Sum of item amounts"
+    },
+    "tax_rate": {
+      "type": "number",
+      "default": 0,
+      "description": "Tax rate percentage (e.g., 10 for 10%)"
+    },
+    "tax_amount": {
+      "type": "number",
+      "description": "Calculated tax amount"
+    },
+    "total": {
+      "type": "number",
+      "description": "Final total due"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "paid",
+        "overdue",
+        "void"
+      ],
+      "default": "draft",
+      "description": "Invoice status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Footer notes or terms"
+    },
+    "from_email": {
+      "type": "string",
+      "description": "Override sender email name/address if supported"
+    },
+    "email_template_id": {
+      "type": "string",
+      "description": "Optional EmailTemplate id used for sending this invoice"
+    },
+    "brand_logo_url": {
+      "type": "string",
+      "description": "Optional logo url for invoice header"
+    },
+    "from_company": {
+      "type": "string",
+      "description": "Display company name in header"
+    },
+    "from_address": {
+      "type": "string",
+      "description": "Display address in header (multiline allowed)"
+    },
+    "payment_instructions": {
+      "type": "string",
+      "description": "Footer payment instructions/notes"
+    }
+  },
+  "required": [
+    "invoice_number",
+    "company_id",
+    "issue_date",
+    "due_date",
+    "items"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}
